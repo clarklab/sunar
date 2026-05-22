@@ -421,7 +421,7 @@
         filter: drop-shadow(0 0 18px rgba(255, 184, 77, 0.26));
         pointer-events: none;
         transition:
-          top 140ms ease-out,
+          top 60ms linear,
           color 700ms ease;
       }
 
@@ -478,8 +478,8 @@
         min-width: 9rem;
         opacity: 0.96;
         transition:
-          left 120ms linear,
-          top 140ms ease-out,
+          left 50ms linear,
+          top 60ms linear,
           opacity 180ms ease,
           transform 180ms ease;
         will-change: transform, left, top;
@@ -703,7 +703,7 @@
           "wght" 760;
         box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
         transition:
-          left 120ms linear,
+          left 50ms linear,
           opacity 220ms ease;
         z-index: 2;
       }
@@ -739,7 +739,7 @@
         opacity: 0.55;
         background: transparent;
         transition:
-          left 120ms linear,
+          left 50ms linear,
           opacity 220ms ease,
           color 700ms ease;
         z-index: 1;
@@ -1135,8 +1135,8 @@
       const AR_VIEW = {
         horizonCenterY: 48,
         horizontalHalfFov: 42,
-        showHalfFov: 46,
-        hideHalfFov: 56,
+        showHalfFov: 42,
+        hideHalfFov: 46,
         verticalHalfFov: 52,
         horizonMarkerGap: 5,
       };
@@ -1243,10 +1243,10 @@
 
       function smoothAngle(current, next, options = {}) {
         const {
-          minAmount = 0.035,
-          maxAmount = 0.28,
-          fullSpeedAt = 65,
-          deadband = 0.7,
+          minAmount = 0.35,
+          maxAmount = 0.85,
+          fullSpeedAt = 18,
+          deadband = 0.5,
         } = options;
 
         if (current === null || Number.isNaN(current)) return normalizeDegrees(next);
@@ -1465,14 +1465,14 @@
       function updateHorizonGuide() {
         const rawElevation = getCameraElevation();
         state.orientation.elevation = smoothValue(state.orientation.elevation, rawElevation, {
-          minAmount: 0.08,
-          maxAmount: 0.24,
-          fullSpeedAt: 26,
-          deadband: 0.18,
+          minAmount: 0.32,
+          maxAmount: 0.7,
+          fullSpeedAt: 14,
+          deadband: 0.25,
         });
 
         const elevation = state.orientation.elevation;
-        const horizonRawY =
+        const horizonY =
           elevation === null
             ? AR_VIEW.horizonCenterY
             : clamp(
@@ -1480,16 +1480,9 @@
                 10,
                 90
               );
-        state.horizonY = smoothValue(state.horizonY, horizonRawY, {
-          minAmount: 0.1,
-          maxAmount: 0.26,
-          fullSpeedAt: 18,
-          deadband: 0.12,
-        });
+        state.horizonY = horizonY;
 
-        const horizonY = state.horizonY ?? horizonRawY;
         const horizonValue = `${horizonY}%`;
-
         els.horizonMask.style.setProperty("--horizon-y", horizonValue);
         els.horizonGuide.style.setProperty("--horizon-y", horizonValue);
 
@@ -1698,49 +1691,27 @@
         const abs = Math.abs(diff);
         const visibilityLimit = targetState.visible ? AR_VIEW.hideHalfFov : AR_VIEW.showHalfFov;
         const visible = horizon.visible && abs <= visibilityLimit;
-        const xRaw = clamp(50 + (diff / AR_VIEW.horizontalHalfFov) * 42, 8, 92);
-        const yRaw = clamp(horizon.y - AR_VIEW.horizonMarkerGap, 16, 78);
-        const pipRawX = clamp(50 + (diff / 180) * 43, 7, 93);
+        const x = clamp(50 + (diff / AR_VIEW.horizontalHalfFov) * 42, 8, 92);
+        const y = clamp(horizon.y - AR_VIEW.horizonMarkerGap, 16, 78);
         const pipBehind = abs > 100;
-        const wasBehind = targetState.pipBehind === true;
+        const pipX = pipBehind
+          ? (diff > 0 ? 93 : 7)
+          : clamp(50 + (diff / 180) * 43, 7, 93);
 
-        targetState.x = smoothValue(targetState.x, xRaw, {
-          minAmount: 0.14,
-          maxAmount: 0.42,
-          fullSpeedAt: 24,
-          deadband: 0.18,
-        });
-        targetState.y = smoothValue(targetState.y, yRaw, {
-          minAmount: 0.1,
-          maxAmount: 0.28,
-          fullSpeedAt: 16,
-          deadband: 0.12,
-        });
-
-        if (pipBehind) {
-          targetState.pipX = diff > 0 ? 93 : 7;
-        } else if (wasBehind || targetState.pipX === null) {
-          targetState.pipX = pipRawX;
-        } else {
-          targetState.pipX = smoothValue(targetState.pipX, pipRawX, {
-            minAmount: 0.14,
-            maxAmount: 0.38,
-            fullSpeedAt: 20,
-            deadband: 0.16,
-          });
-        }
-
+        targetState.x = x;
+        targetState.y = y;
+        targetState.pipX = pipX;
         targetState.pipBehind = pipBehind;
         targetState.visible = visible;
 
-        marker.style.setProperty("--x", `${targetState.x}%`);
-        marker.style.setProperty("--y", `${targetState.y}%`);
+        marker.style.setProperty("--x", `${x}%`);
+        marker.style.setProperty("--y", `${y}%`);
         marker.style.setProperty("--scale", visible && abs < 6 ? "1.12" : "1");
         marker.classList.toggle("is-edge", !visible && abs <= 115);
         marker.classList.toggle("is-offscreen", !visible);
         marker.classList.toggle("is-locked", visible && abs < 6);
         pip.classList.toggle("is-behind", pipBehind);
-        pip.style.setProperty("--pip-x", `${targetState.pipX}%`);
+        pip.style.setProperty("--pip-x", `${pipX}%`);
 
         return {
           key,
