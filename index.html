@@ -353,6 +353,34 @@
         color: var(--panel-muted) !important;
       }
 
+      .event-soon {
+        margin-top: 0.3rem;
+        height: 0.95rem;
+        line-height: 0.95rem;
+        font-size: 0.74rem;
+        font-stretch: 75%;
+        font-variation-settings:
+          "wdth" 75,
+          "wght" 700;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        text-transform: lowercase;
+        opacity: 0;
+        transition: opacity 360ms ease;
+      }
+
+      .event-soon.is-visible {
+        opacity: 1;
+      }
+
+      .event-soon-sunrise {
+        color: #fcd34d;
+      }
+
+      .event-soon-sunset {
+        color: #fda4af;
+      }
+
       .camera-feed {
         position: fixed;
         inset: 0;
@@ -960,14 +988,17 @@
               <div class="rounded-2xl bg-white/10 p-3">
                 <div id="headingCardinal" class="font-condensed text-sm text-white/68">heading</div>
                 <div id="headingValue" class="font-ultra whitespace-nowrap tabular-nums text-xl font-semibold">--°</div>
+                <div class="event-soon" aria-hidden="true"></div>
               </div>
               <div class="rounded-2xl bg-white/10 p-3">
                 <div class="font-condensed text-sm text-white/68">sunrise</div>
                 <div id="sunriseTime" class="font-ultra whitespace-nowrap tabular-nums text-xl font-semibold">--:--</div>
+                <div id="sunriseSoon" class="event-soon event-soon-sunrise" aria-live="polite"></div>
               </div>
               <div class="rounded-2xl bg-white/10 p-3">
                 <div class="font-condensed text-sm text-white/68">sunset</div>
                 <div id="sunsetTime" class="font-ultra whitespace-nowrap tabular-nums text-xl font-semibold">--:--</div>
+                <div id="sunsetSoon" class="event-soon event-soon-sunset" aria-live="polite"></div>
               </div>
             </div>
             <div id="targetStatus" class="mt-3 rounded-2xl bg-white/10 px-4 py-3 text-center text-base/6 font-semibold text-pretty sm:text-sm/6">
@@ -1085,6 +1116,8 @@
         headingCardinal: document.getElementById("headingCardinal"),
         sunriseTime: document.getElementById("sunriseTime"),
         sunsetTime: document.getElementById("sunsetTime"),
+        sunriseSoon: document.getElementById("sunriseSoon"),
+        sunsetSoon: document.getElementById("sunsetSoon"),
         targetStatus: document.getElementById("targetStatus"),
         horizonMask: document.getElementById("horizonMask"),
         horizonGuide: document.getElementById("horizonGuide"),
@@ -1564,17 +1597,48 @@
         return formatted.replace(/\s+(AM|PM)$/i, (_, p) => p.toLowerCase());
       }
 
+      function minutesUntilSolarEvent(eventMinutes, date = new Date()) {
+        const nowMinutes = date.getHours() * 60 + date.getMinutes() + date.getSeconds() / 60;
+        return eventMinutes - nowMinutes;
+      }
+
+      function formatCountdown(minutesAway) {
+        if (minutesAway < 1) return "any minute";
+        if (minutesAway < 60) return `in ${Math.round(minutesAway)}m`;
+        const hours = Math.floor(minutesAway / 60);
+        const mins = Math.round(minutesAway - hours * 60);
+        if (mins === 0) return `in ${hours}h`;
+        if (mins === 60) return `in ${hours + 1}h`;
+        return `in ${hours}h ${mins}m`;
+      }
+
+      function updateEventSoon(el, eventMinutes, date = new Date()) {
+        const minutesAway = minutesUntilSolarEvent(eventMinutes, date);
+        if (minutesAway >= 0 && minutesAway <= 180) {
+          el.textContent = formatCountdown(minutesAway);
+          el.classList.add("is-visible");
+        } else {
+          el.textContent = "";
+          el.classList.remove("is-visible");
+        }
+      }
+
       function renderSunReadouts() {
         if (!state.position || !state.sun || state.sun.error) {
           els.locationReadout.textContent = state.sun?.error || "GPS pending";
+          els.sunriseSoon.classList.remove("is-visible");
+          els.sunsetSoon.classList.remove("is-visible");
           return;
         }
 
         const { latitude, longitude, accuracy } = state.position.coords;
+        const now = new Date();
         els.sunriseBearing.textContent = `${Math.round(state.sun.sunrise.azimuth)}°`;
         els.sunsetBearing.textContent = `${Math.round(state.sun.sunset.azimuth)}°`;
-        els.sunriseTime.textContent = formatSolarTime(state.sun.sunrise.minutes);
-        els.sunsetTime.textContent = formatSolarTime(state.sun.sunset.minutes);
+        els.sunriseTime.textContent = formatSolarTime(state.sun.sunrise.minutes, now);
+        els.sunsetTime.textContent = formatSolarTime(state.sun.sunset.minutes, now);
+        updateEventSoon(els.sunriseSoon, state.sun.sunrise.minutes, now);
+        updateEventSoon(els.sunsetSoon, state.sun.sunset.minutes, now);
         els.locationReadout.textContent = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} · ±${Math.round(accuracy)}m`;
       }
 
