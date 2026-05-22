@@ -373,12 +373,72 @@
         opacity: 1;
       }
 
+      .ar-tile {
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .ar-tile > .font-ultra {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
       .event-soon-sunrise {
         color: #fcd34d;
       }
 
       .event-soon-sunset {
         color: #fda4af;
+      }
+
+      .event-soon.is-magic-hour {
+        display: inline-block;
+        max-width: 100%;
+        height: auto;
+        line-height: 1.05;
+        padding: 0.18rem 0.45rem;
+        border-radius: 999px;
+        font-size: 0.62rem;
+        font-stretch: 75%;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .event-soon-sunrise.is-magic-hour {
+        color: #1f1410;
+        background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+        box-shadow:
+          0 4px 12px rgba(251, 191, 36, 0.32),
+          0 0 16px rgba(252, 211, 77, 0.22);
+      }
+
+      .event-soon-sunset.is-magic-hour {
+        color: #fff7ed;
+        background: linear-gradient(135deg, #ff5e9c 0%, #ff7a3c 100%);
+        box-shadow:
+          0 4px 14px rgba(255, 94, 156, 0.36),
+          0 0 22px rgba(255, 122, 60, 0.26);
+        text-shadow: 0 1px 4px rgba(154, 52, 18, 0.32);
+      }
+
+      .event-soon.is-magic-hour-active {
+        animation: magic-glow 2.4s ease-in-out infinite;
+      }
+
+      @keyframes magic-glow {
+        0%,
+        100% {
+          transform: scale(1);
+          filter: brightness(1);
+        }
+        50% {
+          transform: scale(1.05);
+          filter: brightness(1.18);
+        }
       }
 
       .camera-feed {
@@ -564,7 +624,12 @@
       }
 
       .target-label {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
         margin-top: 0.7rem;
+        width: max-content;
         color: white;
         text-align: center;
         text-shadow: 0 2px 22px rgba(0, 0, 0, 0.48);
@@ -857,6 +922,54 @@
           padding-bottom: 0.85rem;
         }
       }
+
+      @media (max-height: 700px) {
+        #arScreen .glass {
+          padding: 0.55rem;
+        }
+
+        #arScreen .ar-tile {
+          padding: 0.5rem;
+        }
+
+        #arScreen .ar-tile > .font-condensed {
+          font-size: 0.7rem;
+        }
+
+        #arScreen .ar-tile > .font-ultra {
+          font-size: 1rem;
+        }
+
+        .bearing-rail {
+          height: 3.6rem;
+        }
+
+        .bearing-pip {
+          width: 2.4rem;
+          height: 2.4rem;
+          font-size: 0.74rem;
+        }
+
+        #refreshButton,
+        #hapticButton,
+        #installButton {
+          padding-top: 0.5rem;
+          padding-bottom: 0.5rem;
+          font-size: 0.82rem;
+        }
+
+        #locationReadout {
+          margin-top: 0.4rem;
+          font-size: 0.78rem;
+        }
+
+        #targetStatus {
+          margin-top: 0.5rem;
+          padding-top: 0.5rem;
+          padding-bottom: 0.5rem;
+          font-size: 0.82rem;
+        }
+      }
     </style>
   </head>
   <body data-sky-theme="night">
@@ -984,20 +1097,20 @@
 
         <div class="pointer-events-none fixed inset-x-0 top-0 z-20 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <div class="glass mx-auto max-w-xl rounded-[1.5rem] p-3">
-            <div class="grid grid-cols-3 gap-2 text-center">
-              <div class="rounded-2xl bg-white/10 p-3">
-                <div id="headingCardinal" class="font-condensed text-sm text-white/68">heading</div>
-                <div id="headingValue" class="font-ultra whitespace-nowrap tabular-nums text-xl font-semibold">--°</div>
+            <div class="grid grid-cols-3 gap-1.5 text-center">
+              <div class="ar-tile rounded-2xl bg-white/10 p-2.5">
+                <div id="headingCardinal" class="font-condensed text-xs text-white/68">heading</div>
+                <div id="headingValue" class="font-ultra whitespace-nowrap tabular-nums text-lg font-semibold">--°</div>
                 <div class="event-soon" aria-hidden="true"></div>
               </div>
-              <div class="rounded-2xl bg-white/10 p-3">
-                <div class="font-condensed text-sm text-white/68">sunrise</div>
-                <div id="sunriseTime" class="font-ultra whitespace-nowrap tabular-nums text-xl font-semibold">--:--</div>
+              <div class="ar-tile rounded-2xl bg-white/10 p-2.5">
+                <div class="font-condensed text-xs text-white/68">sunrise</div>
+                <div id="sunriseTime" class="font-ultra whitespace-nowrap tabular-nums text-lg font-semibold">--:--</div>
                 <div id="sunriseSoon" class="event-soon event-soon-sunrise" aria-live="polite"></div>
               </div>
-              <div class="rounded-2xl bg-white/10 p-3">
-                <div class="font-condensed text-sm text-white/68">sunset</div>
-                <div id="sunsetTime" class="font-ultra whitespace-nowrap tabular-nums text-xl font-semibold">--:--</div>
+              <div class="ar-tile rounded-2xl bg-white/10 p-2.5">
+                <div class="font-condensed text-xs text-white/68">sunset</div>
+                <div id="sunsetTime" class="font-ultra whitespace-nowrap tabular-nums text-lg font-semibold">--:--</div>
                 <div id="sunsetSoon" class="event-soon event-soon-sunset" aria-live="polite"></div>
               </div>
             </div>
@@ -1605,22 +1718,44 @@
         return `in ${hours}h ${mins}m`;
       }
 
-      function updateEventSoon(el, eventMinutes, date = new Date()) {
+      function updateEventSoon(el, eventMinutes, kind, date = new Date()) {
         const minutesAway = minutesUntilSolarEvent(eventMinutes, date);
-        if (minutesAway >= 0 && minutesAway <= 180) {
-          el.textContent = formatCountdown(minutesAway);
-          el.classList.add("is-visible");
+        el.classList.remove("is-visible", "is-magic-hour", "is-magic-hour-active");
+        el.textContent = "";
+
+        if (kind === "sunset") {
+          const nowMinutes = date.getHours() * 60 + date.getMinutes();
+          const isAfternoon = nowMinutes >= 12 * 60;
+          if (!isAfternoon || minutesAway < -30) return;
+
+          el.classList.add("is-visible", "is-magic-hour");
+          el.textContent = "magic hour";
+          if (minutesAway <= 60) {
+            el.classList.add("is-magic-hour-active");
+          }
+          return;
+        }
+
+        // sunrise
+        if (minutesAway > 180 || minutesAway < -30) return;
+
+        el.classList.add("is-visible");
+        if (minutesAway <= 60) {
+          el.classList.add("is-magic-hour");
+          el.textContent = "magic hour";
+          if (minutesAway <= 30 && minutesAway >= -10) {
+            el.classList.add("is-magic-hour-active");
+          }
         } else {
-          el.textContent = "";
-          el.classList.remove("is-visible");
+          el.textContent = formatCountdown(minutesAway);
         }
       }
 
       function renderSunReadouts() {
         if (!state.position || !state.sun || state.sun.error) {
           els.locationReadout.textContent = state.sun?.error || "GPS pending";
-          els.sunriseSoon.classList.remove("is-visible");
-          els.sunsetSoon.classList.remove("is-visible");
+          els.sunriseSoon.classList.remove("is-visible", "is-magic-hour", "is-magic-hour-active");
+          els.sunsetSoon.classList.remove("is-visible", "is-magic-hour", "is-magic-hour-active");
           return;
         }
 
@@ -1630,8 +1765,8 @@
         els.sunsetBearing.textContent = `${Math.round(state.sun.sunset.azimuth)}°`;
         els.sunriseTime.textContent = formatSolarTime(state.sun.sunrise.minutes, now);
         els.sunsetTime.textContent = formatSolarTime(state.sun.sunset.minutes, now);
-        updateEventSoon(els.sunriseSoon, state.sun.sunrise.minutes, now);
-        updateEventSoon(els.sunsetSoon, state.sun.sunset.minutes, now);
+        updateEventSoon(els.sunriseSoon, state.sun.sunrise.minutes, "sunrise", now);
+        updateEventSoon(els.sunsetSoon, state.sun.sunset.minutes, "sunset", now);
         els.locationReadout.textContent = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} · ±${Math.round(accuracy)}m`;
       }
 
