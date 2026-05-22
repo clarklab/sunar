@@ -674,8 +674,14 @@
           "wdth" 125,
           "wght" 760;
         box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
-        transition: left 120ms linear;
+        transition:
+          left 120ms linear,
+          opacity 220ms ease;
         z-index: 2;
+      }
+
+      .bearing-pip.is-behind {
+        opacity: 0;
       }
 
       .bearing-cardinals {
@@ -1049,8 +1055,8 @@
         },
         horizonY: null,
         targets: {
-          sunrise: { x: null, y: null, pipX: null, visible: false },
-          sunset: { x: null, y: null, pipX: null, visible: false },
+          sunrise: { x: null, y: null, pipX: null, visible: false, pipBehind: false },
+          sunset: { x: null, y: null, pipX: null, visible: false, pipBehind: false },
         },
         watchId: null,
         wakeLock: null,
@@ -1058,6 +1064,7 @@
         lastVibrateAt: 0,
         lockedKey: null,
         renderQueued: false,
+        cardinal: null,
       };
 
       const els = {
@@ -1109,9 +1116,17 @@
       ];
 
       const CARDINAL_OCTANTS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      const CARDINAL_HYSTERESIS = 1.5;
 
-      function cardinalFromBearing(deg) {
-        return CARDINAL_OCTANTS[Math.round(normalizeDegrees(deg) / 45) % 8];
+      function cardinalFromBearing(deg, prev = null) {
+        const normalized = normalizeDegrees(deg);
+        const next = CARDINAL_OCTANTS[Math.round(normalized / 45) % 8];
+        if (!prev || prev === next) return next;
+        const prevIdx = CARDINAL_OCTANTS.indexOf(prev);
+        if (prevIdx === -1) return next;
+        const angularToPrev = Math.abs(signedDelta(normalized, prevIdx * 45));
+        if (angularToPrev < 22.5 + CARDINAL_HYSTERESIS) return prev;
+        return next;
       }
 
       const permissionLabels = {
@@ -1372,8 +1387,14 @@
           nextHeading = event.webkitCompassHeading;
           state.headingSource = "true compass";
         } else if (typeof event.alpha === "number") {
-          nextHeading = normalizeDegrees(360 - event.alpha);
-          state.headingSource = event.absolute ? "absolute compass" : "relative compass";
+          const isAbsolute = event.absolute === true;
+          if (isAbsolute) {
+            nextHeading = normalizeDegrees(360 - event.alpha);
+            state.headingSource = "absolute compass";
+          } else if (state.headingSource !== "absolute compass" && state.headingSource !== "true compass") {
+            nextHeading = normalizeDegrees(360 - event.alpha);
+            state.headingSource = "relative compass";
+          }
         }
 
         if (nextHeading !== null) state.rawHeading = normalizeDegrees(nextHeading);
@@ -1417,11 +1438,12 @@
           deadband: 0.18,
         });
 
+        const elevation = state.orientation.elevation;
         const horizonRawY =
-          rawElevation === null
+          elevation === null
             ? AR_VIEW.horizonCenterY
             : clamp(
-                AR_VIEW.horizonCenterY + (state.orientation.elevation / AR_VIEW.verticalHalfFov) * 42,
+                AR_VIEW.horizonCenterY + (elevation / AR_VIEW.verticalHalfFov) * 42,
                 10,
                 90
               );
@@ -1440,9 +1462,9 @@
 
         return {
           y: horizonY,
-          ready: rawElevation !== null,
+          ready: elevation !== null,
           visible: horizonY >= 18 && horizonY <= 84,
-          elevation: state.orientation.elevation,
+          elevation,
         };
       }
 
@@ -1576,7 +1598,8 @@
         }
 
         els.headingValue.textContent = `${Math.round(state.heading)}°`;
-        els.headingCardinal.textContent = `facing ${cardinalFromBearing(state.heading)}`;
+        state.cardinal = cardinalFromBearing(state.heading, state.cardinal);
+        els.headingCardinal.textContent = `facing ${state.cardinal}`;
         updateCardinalTicks(state.heading);
         const sunrise = projectTarget("sunrise", state.sun.sunrise, els.sunriseMarker, els.sunrisePip, horizon);
         const sunset = projectTarget("sunset", state.sun.sunset, els.sunsetMarker, els.sunsetPip, horizon);
@@ -1614,6 +1637,8 @@
         const xRaw = clamp(50 + (diff / AR_VIEW.horizontalHalfFov) * 42, 8, 92);
         const yRaw = clamp(horizon.y - AR_VIEW.horizonMarkerGap, 16, 78);
         const pipRawX = clamp(50 + (diff / 180) * 43, 7, 93);
+        const pipBehind = abs > 100;
+        const wasBehind = targetState.pipBehind === true;
 
         targetState.x = smoothValue(targetState.x, xRaw, {
           minAmount: 0.14,
@@ -1627,12 +1652,21 @@
           fullSpeedAt: 16,
           deadband: 0.12,
         });
-        targetState.pipX = smoothValue(targetState.pipX, pipRawX, {
-          minAmount: 0.14,
-          maxAmount: 0.38,
-          fullSpeedAt: 20,
-          deadband: 0.16,
-        });
+
+        if (pipBehind) {
+          targetState.pipX = diff > 0 ? 93 : 7;
+        } else if (wasBehind || targetState.pipX === null) {
+          targetState.pipX = pipRawX;
+        } else {
+          targetState.pipX = smoothValue(targetState.pipX, pipRawX, {
+            minAmount: 0.14,
+            maxAmount: 0.38,
+            fullSpeedAt: 20,
+            deadband: 0.16,
+          });
+        }
+
+        targetState.pipBehind = pipBehind;
         targetState.visible = visible;
 
         marker.style.setProperty("--x", `${targetState.x}%`);
@@ -1641,6 +1675,7 @@
         marker.classList.toggle("is-edge", !visible && abs <= 115);
         marker.classList.toggle("is-offscreen", !visible);
         marker.classList.toggle("is-locked", visible && abs < 6);
+        pip.classList.toggle("is-behind", pipBehind);
         pip.style.setProperty("--pip-x", `${targetState.pipX}%`);
 
         return {
@@ -1656,10 +1691,15 @@
           const card = CARDINAL_BEARINGS.find((c) => c.key === node.dataset.cardinal);
           if (!card) return;
           const diff = signedDelta(card.azimuth, heading);
-          const x = clamp(50 + (diff / 180) * 47, 4, 96);
-          const behind = Math.abs(diff) > 90;
+          const abs = Math.abs(diff);
+          const behind = abs > 100;
+          const x = behind
+            ? (diff > 0 ? 96 : 4)
+            : clamp(50 + (diff / 180) * 47, 4, 96);
           node.style.setProperty("--pip-x", `${x}%`);
-          node.style.opacity = behind ? "0.25" : (card.key === "N" ? "0.85" : "0.55");
+          node.style.opacity = behind
+            ? "0"
+            : (card.key === "N" ? "0.85" : "0.55");
         });
       }
 
