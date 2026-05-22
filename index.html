@@ -1,0 +1,1117 @@
+<!doctype html>
+<html lang="en" class="antialiased">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Sunar is a calming AR compass app for finding today's local sunrise and sunset directions." />
+    <meta name="theme-color" content="#2a1518" />
+    <meta name="theme-color" content="#fff7ed" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#2a1518" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="application-name" content="Sunar" />
+    <meta name="apple-mobile-web-app-title" content="Sunar" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta property="og:title" content="Sunar" />
+    <meta property="og:description" content="Use AR, GPS, and compass guidance to find today's sunrise and sunset directions." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./sunar-icon.webp" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Sunar" />
+    <meta name="twitter:description" content="A calming AR compass for sunrise and sunset direction finding." />
+    <meta name="twitter:image" content="./sunar-icon.webp" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./favicon.ico" sizes="any" />
+    <link rel="icon" href="./favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="./favicon-48.png" type="image/png" sizes="48x48" />
+    <link rel="icon" href="./favicon.png" type="image/png" sizes="256x256" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180" />
+    <title>Sunar - Sunrise & Sunset AR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wdth,wght@0,75..125,200..900;1,75..125,200..900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Mona Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+              display: ['"Mona Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Mona Sans", ui-sans-serif, system-ui, sans-serif;
+        font-feature-settings: "ss01", "ss03", "cv02", "cv11";
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        background: #130f13;
+        overflow: hidden;
+      }
+
+      .font-ultra {
+        font-stretch: 125%;
+        font-variation-settings:
+          "wdth" 125,
+          "wght" 760;
+        letter-spacing: 0;
+      }
+
+      .font-condensed {
+        font-stretch: 75%;
+        font-variation-settings:
+          "wdth" 75,
+          "wght" 720;
+        letter-spacing: 0;
+      }
+
+      .permission-shell {
+        background:
+          linear-gradient(160deg, rgba(255, 247, 237, 0.98) 0%, rgba(255, 228, 230, 0.95) 54%, rgba(254, 215, 170, 0.94) 100%),
+          #fff7ed;
+      }
+
+      .glass {
+        background: rgba(19, 15, 19, 0.52);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 20px 70px rgba(19, 15, 19, 0.24);
+        backdrop-filter: blur(18px);
+      }
+
+      .soft-panel {
+        background: rgba(255, 255, 255, 0.58);
+        border: 1px solid rgba(42, 21, 24, 0.1);
+        box-shadow: 0 18px 50px rgba(154, 52, 18, 0.1);
+        backdrop-filter: blur(16px);
+      }
+
+      .camera-feed {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #161118;
+      }
+
+      .ar-vignette {
+        background:
+          linear-gradient(180deg, rgba(18, 13, 16, 0.62), rgba(18, 13, 16, 0.04) 34%, rgba(18, 13, 16, 0.74)),
+          linear-gradient(90deg, rgba(18, 13, 16, 0.24), rgba(18, 13, 16, 0), rgba(18, 13, 16, 0.24));
+      }
+
+      .target-marker {
+        --x: 50%;
+        --y: 46%;
+        --scale: 1;
+        position: absolute;
+        left: var(--x);
+        top: var(--y);
+        transform: translate(-50%, -50%) scale(var(--scale));
+        transform-origin: center;
+        min-width: 9rem;
+        opacity: 0.96;
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+        will-change: transform, left, top;
+      }
+
+      .target-marker.is-edge {
+        opacity: 0.66;
+      }
+
+      .target-dot {
+        position: relative;
+        display: grid;
+        width: 7.6rem;
+        height: 7.6rem;
+        margin-inline: auto;
+        place-items: center;
+        border-radius: 999px;
+        filter: drop-shadow(0 24px 46px rgba(0, 0, 0, 0.34));
+      }
+
+      .target-dot::before,
+      .target-dot::after {
+        content: "";
+        position: absolute;
+        inset: -0.8rem;
+        border-radius: inherit;
+        border: 1px solid currentColor;
+        opacity: 0.28;
+        animation: breathe 2.8s ease-in-out infinite;
+      }
+
+      .target-dot::after {
+        inset: -1.55rem;
+        animation-delay: 620ms;
+        opacity: 0.18;
+      }
+
+      .target-marker.is-locked .target-dot::before,
+      .target-marker.is-locked .target-dot::after {
+        border-width: 2px;
+        opacity: 0.42;
+      }
+
+      .target-label {
+        margin-top: 0.7rem;
+        color: white;
+        text-align: center;
+        text-shadow: 0 2px 22px rgba(0, 0, 0, 0.48);
+      }
+
+      .target-label span {
+        display: block;
+        font-size: 1.35rem;
+        font-weight: 780;
+        font-stretch: 75%;
+        font-variation-settings:
+          "wdth" 75,
+          "wght" 780;
+      }
+
+      .target-label strong {
+        display: block;
+        margin-top: 0.1rem;
+        font-size: 0.95rem;
+        font-weight: 680;
+        font-stretch: 125%;
+        font-variation-settings:
+          "wdth" 125,
+          "wght" 680;
+      }
+
+      .sunrise .target-dot {
+        color: #ffb84d;
+        background:
+          radial-gradient(circle at 36% 28%, rgba(255, 247, 237, 0.96), rgba(255, 216, 128, 0.84) 27%, rgba(249, 115, 22, 0.92) 68%, rgba(194, 65, 12, 0.78)),
+          #fb923c;
+      }
+
+      .sunset .target-dot {
+        color: #ff7aa7;
+        background:
+          radial-gradient(circle at 36% 28%, rgba(255, 241, 242, 0.95), rgba(251, 113, 133, 0.86) 30%, rgba(219, 39, 119, 0.9) 70%, rgba(136, 19, 55, 0.8)),
+          #ec4899;
+      }
+
+      .reticle {
+        position: absolute;
+        left: 50%;
+        top: 46%;
+        width: min(28vw, 9rem);
+        aspect-ratio: 1;
+        transform: translate(-50%, -50%);
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.62);
+        box-shadow:
+          0 0 0 1px rgba(42, 21, 24, 0.18),
+          inset 0 0 36px rgba(255, 255, 255, 0.18);
+      }
+
+      .reticle::before,
+      .reticle::after {
+        content: "";
+        position: absolute;
+        background: rgba(255, 255, 255, 0.72);
+        border-radius: 999px;
+      }
+
+      .reticle::before {
+        left: 50%;
+        top: -1.35rem;
+        width: 1px;
+        height: calc(100% + 2.7rem);
+      }
+
+      .reticle::after {
+        top: 50%;
+        left: -1.35rem;
+        width: calc(100% + 2.7rem);
+        height: 1px;
+      }
+
+      .reticle.is-locked {
+        border-color: rgba(255, 233, 181, 0.95);
+        box-shadow:
+          0 0 0 1px rgba(255, 184, 77, 0.5),
+          0 0 42px rgba(255, 184, 77, 0.5),
+          inset 0 0 46px rgba(255, 255, 255, 0.28);
+      }
+
+      .bearing-rail {
+        position: relative;
+        height: 4.75rem;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .bearing-rail::before {
+        content: "";
+        position: absolute;
+        inset: 50% auto auto 50%;
+        width: 2px;
+        height: 62%;
+        transform: translate(-50%, -50%);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.82);
+      }
+
+      .bearing-pip {
+        --pip-x: 50%;
+        position: absolute;
+        left: var(--pip-x);
+        top: 50%;
+        width: 3rem;
+        height: 3rem;
+        transform: translate(-50%, -50%);
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: 0.82rem;
+        font-weight: 760;
+        font-stretch: 125%;
+        font-variation-settings:
+          "wdth" 125,
+          "wght" 760;
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
+      }
+
+      .permission-dot {
+        width: 0.72rem;
+        height: 0.72rem;
+        border-radius: 999px;
+        background: #a8a29e;
+        box-shadow: 0 0 0 4px rgba(168, 162, 158, 0.16);
+      }
+
+      .permission-dot[data-state="granted"],
+      .permission-dot[data-state="ready"] {
+        background: #0f766e;
+        box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.16);
+      }
+
+      .permission-dot[data-state="prompt"],
+      .permission-dot[data-state="requesting"],
+      .permission-dot[data-state="limited"] {
+        background: #f97316;
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.16);
+      }
+
+      .permission-dot[data-state="denied"],
+      .permission-dot[data-state="blocked"] {
+        background: #e11d48;
+        box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.16);
+      }
+
+      .icon-touch {
+        position: relative;
+      }
+
+      .icon-touch > .touch-target {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: max(100%, 3rem);
+        height: max(100%, 3rem);
+        transform: translate(-50%, -50%);
+      }
+
+      @keyframes breathe {
+        0%,
+        100% {
+          transform: scale(0.92);
+          opacity: 0.18;
+        }
+        50% {
+          transform: scale(1.08);
+          opacity: 0.42;
+        }
+      }
+
+      @media (min-width: 640px) {
+        .target-dot {
+          width: 8.5rem;
+          height: 8.5rem;
+        }
+      }
+
+      @media (max-height: 740px) {
+        .permission-shell {
+          padding-top: 0.75rem;
+          padding-bottom: 0.75rem;
+        }
+
+        .permission-layout {
+          gap: 1rem;
+        }
+
+        .permission-title {
+          font-size: 3rem;
+        }
+
+        .permission-copy,
+        #permissionNote,
+        .permission-detail {
+          display: none;
+        }
+
+        .permission-card {
+          border-radius: 1.25rem;
+          padding: 0.65rem;
+        }
+
+        .permission-row {
+          min-height: 3.8rem;
+          border-radius: 1rem;
+          gap: 0.25rem;
+          padding: 0.65rem;
+        }
+
+        #startButton {
+          padding-top: 0.85rem;
+          padding-bottom: 0.85rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app" class="isolate min-h-dvh overflow-hidden">
+      <section id="permissionScreen" class="permission-shell h-dvh overflow-y-auto px-5 py-5 text-[#241214] sm:px-8 sm:py-6">
+        <div class="permission-layout mx-auto flex min-h-[calc(100dvh-3rem)] max-w-xl flex-col justify-between gap-8">
+          <div class="pt-4">
+            <div class="flex items-center justify-between gap-4">
+              <div class="font-condensed text-lg font-semibold text-[#7c2d12] sm:text-base">SUNAR</div>
+              <div class="rounded-full border border-[#7c2d12]/10 bg-white/45 px-3 py-1 text-base font-medium text-[#7c2d12] sm:text-sm">
+                AR sky finder
+              </div>
+            </div>
+
+            <div class="mt-7">
+              <p class="font-condensed text-base font-semibold text-[#be123c] sm:text-sm">sunrise + sunset bearing</p>
+              <h1 class="permission-title font-ultra mt-3 max-w-[10ch] text-5xl font-semibold text-balance text-[#2a1518] sm:text-7xl">
+                Find the light line.
+              </h1>
+              <p class="permission-copy mt-5 max-w-[32ch] text-lg/7 font-medium text-pretty text-[#5f2c2f] sm:text-base/7">
+                Open the rear camera, lock local GPS, listen to the compass, and feel a pulse when the marker lands.
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="permission-card soft-panel rounded-[1.75rem] p-4">
+              <div class="grid grid-cols-2 gap-2" role="list" aria-label="Permission status">
+                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="camera">
+                  <div class="flex items-center gap-3">
+                    <span class="permission-dot" data-state="prompt"></span>
+                    <div>
+                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Camera</div>
+                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">rear lens</div>
+                    </div>
+                  </div>
+                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                </div>
+                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="location">
+                  <div class="flex items-center gap-3">
+                    <span class="permission-dot" data-state="prompt"></span>
+                    <div>
+                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">GPS</div>
+                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">local horizon</div>
+                    </div>
+                  </div>
+                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                </div>
+                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="compass">
+                  <div class="flex items-center gap-3">
+                    <span class="permission-dot" data-state="prompt"></span>
+                    <div>
+                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Compass</div>
+                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">true bearing</div>
+                    </div>
+                  </div>
+                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                </div>
+                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="motion">
+                  <div class="flex items-center gap-3">
+                    <span class="permission-dot" data-state="prompt"></span>
+                    <div>
+                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Gyro</div>
+                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">device tilt</div>
+                    </div>
+                  </div>
+                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                </div>
+                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="haptics">
+                  <div class="flex items-center gap-3">
+                    <span class="permission-dot" data-state="prompt"></span>
+                    <div>
+                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Haptics</div>
+                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">alignment pulse</div>
+                    </div>
+                  </div>
+                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                </div>
+                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="wake">
+                  <div class="flex items-center gap-3">
+                    <span class="permission-dot" data-state="prompt"></span>
+                    <div>
+                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Wake lock</div>
+                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">steady view</div>
+                    </div>
+                  </div>
+                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              id="startButton"
+              class="flex w-full items-center justify-center gap-3 rounded-full bg-[#2a1518] px-4 py-4 text-lg font-semibold text-white ring-2 ring-[#2a1518] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#be123c] sm:text-base"
+              type="button"
+            >
+              <i data-lucide="aperture" class="size-6 sm:size-5" aria-hidden="true"></i>
+              Grant sky access
+            </button>
+
+            <p id="permissionNote" class="min-h-12 text-center text-base/7 font-medium text-pretty text-[#7c2d12] sm:text-sm/6">
+              Mobile browsers need HTTPS or localhost for camera and motion sensors.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="arScreen" class="hidden min-h-dvh bg-[#130f13] text-white">
+        <video id="cameraFeed" class="camera-feed" autoplay muted playsinline></video>
+        <div class="ar-vignette pointer-events-none fixed inset-0"></div>
+
+        <div id="sunriseMarker" class="target-marker sunrise pointer-events-none" aria-hidden="true">
+          <div class="target-dot"></div>
+          <div class="target-label">
+            <span>Sunrise</span>
+            <strong id="sunriseBearing">--°</strong>
+          </div>
+        </div>
+
+        <div id="sunsetMarker" class="target-marker sunset pointer-events-none" aria-hidden="true">
+          <div class="target-dot"></div>
+          <div class="target-label">
+            <span>Sunset</span>
+            <strong id="sunsetBearing">--°</strong>
+          </div>
+        </div>
+
+        <div id="reticle" class="reticle pointer-events-none" aria-hidden="true"></div>
+
+        <div class="pointer-events-none fixed inset-x-0 top-0 z-20 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
+          <div class="glass mx-auto max-w-xl rounded-[1.5rem] p-3">
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="rounded-2xl bg-white/10 p-3">
+                <div class="font-condensed text-base text-white/68 sm:text-sm">heading</div>
+                <div id="headingValue" class="font-ultra tabular-nums text-2xl font-semibold sm:text-xl">--°</div>
+              </div>
+              <div class="rounded-2xl bg-white/10 p-3">
+                <div class="font-condensed text-base text-white/68 sm:text-sm">sunrise</div>
+                <div id="sunriseTime" class="font-ultra tabular-nums text-2xl font-semibold sm:text-xl">--:--</div>
+              </div>
+              <div class="rounded-2xl bg-white/10 p-3">
+                <div class="font-condensed text-base text-white/68 sm:text-sm">sunset</div>
+                <div id="sunsetTime" class="font-ultra tabular-nums text-2xl font-semibold sm:text-xl">--:--</div>
+              </div>
+            </div>
+            <div id="targetStatus" class="mt-3 rounded-2xl bg-white/10 px-4 py-3 text-center text-base/6 font-semibold text-pretty sm:text-sm/6">
+              Calibrating compass
+            </div>
+          </div>
+        </div>
+
+        <div class="fixed inset-x-0 bottom-0 z-20 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+          <div class="glass mx-auto max-w-xl rounded-[1.75rem] p-3">
+            <div class="bearing-rail">
+              <div
+                id="sunrisePip"
+                class="bearing-pip"
+                style="--pip-x: 35%; background: linear-gradient(135deg, #fde68a, #f97316);"
+              >
+                rise
+              </div>
+              <div
+                id="sunsetPip"
+                class="bearing-pip"
+                style="--pip-x: 65%; background: linear-gradient(135deg, #fda4af, #db2777);"
+              >
+                set
+              </div>
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+              <button
+                id="refreshButton"
+                class="icon-touch flex flex-1 items-center justify-center gap-2 rounded-full bg-white/12 py-3 pr-3 pl-2 text-base font-semibold text-white ring-1 ring-white/12 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb84d] sm:text-sm"
+                type="button"
+              >
+                <span class="touch-target" aria-hidden="true"></span>
+                <i data-lucide="locate-fixed" class="size-5 sm:size-4" aria-hidden="true"></i>
+                Refresh GPS
+              </button>
+              <button
+                id="hapticButton"
+                class="icon-touch flex flex-1 items-center justify-center gap-2 rounded-full bg-white/12 py-3 pr-3 pl-2 text-base font-semibold text-white ring-1 ring-white/12 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff7aa7] sm:text-sm"
+                type="button"
+              >
+                <span class="touch-target" aria-hidden="true"></span>
+                <i data-lucide="waves" class="size-5 sm:size-4" aria-hidden="true"></i>
+                Haptics on
+              </button>
+            </div>
+            <button
+              id="installButton"
+              class="icon-touch mt-3 hidden w-full items-center justify-center gap-2 rounded-full bg-white/12 py-3 pr-3 pl-2 text-base font-semibold text-white ring-1 ring-white/12 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb84d] sm:text-sm"
+              type="button"
+            >
+              <span class="touch-target" aria-hidden="true"></span>
+              <i data-lucide="download" class="size-5 sm:size-4" aria-hidden="true"></i>
+              Install Sunar
+            </button>
+
+            <div id="locationReadout" class="mt-3 text-center text-base/6 font-medium text-white/72 sm:text-sm/6">
+              GPS pending
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+      const state = {
+        stream: null,
+        position: null,
+        sun: null,
+        heading: null,
+        headingSource: "waiting",
+        orientation: {
+          beta: 0,
+          gamma: 0,
+        },
+        watchId: null,
+        wakeLock: null,
+        haptics: true,
+        lastVibrateAt: 0,
+        lockedKey: null,
+        renderQueued: false,
+      };
+
+      const els = {
+        permissionScreen: document.getElementById("permissionScreen"),
+        arScreen: document.getElementById("arScreen"),
+        startButton: document.getElementById("startButton"),
+        refreshButton: document.getElementById("refreshButton"),
+        hapticButton: document.getElementById("hapticButton"),
+        permissionNote: document.getElementById("permissionNote"),
+        cameraFeed: document.getElementById("cameraFeed"),
+        sunriseMarker: document.getElementById("sunriseMarker"),
+        sunsetMarker: document.getElementById("sunsetMarker"),
+        sunriseBearing: document.getElementById("sunriseBearing"),
+        sunsetBearing: document.getElementById("sunsetBearing"),
+        headingValue: document.getElementById("headingValue"),
+        sunriseTime: document.getElementById("sunriseTime"),
+        sunsetTime: document.getElementById("sunsetTime"),
+        targetStatus: document.getElementById("targetStatus"),
+        sunrisePip: document.getElementById("sunrisePip"),
+        sunsetPip: document.getElementById("sunsetPip"),
+        installButton: document.getElementById("installButton"),
+        locationReadout: document.getElementById("locationReadout"),
+        reticle: document.getElementById("reticle"),
+      };
+
+      let installPrompt = null;
+
+      const permissionLabels = {
+        prompt: "prompt",
+        requesting: "asking",
+        granted: "ready",
+        ready: "ready",
+        denied: "denied",
+        blocked: "blocked",
+        limited: "limited",
+        unsupported: "limited",
+      };
+
+      function normalizeDegrees(value) {
+        return ((value % 360) + 360) % 360;
+      }
+
+      function signedDelta(target, origin) {
+        return ((target - origin + 540) % 360) - 180;
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function toRad(value) {
+        return (value * Math.PI) / 180;
+      }
+
+      function toDeg(value) {
+        return (value * 180) / Math.PI;
+      }
+
+      function smoothAngle(current, next, amount = 0.18) {
+        if (current === null || Number.isNaN(current)) return normalizeDegrees(next);
+        return normalizeDegrees(current + signedDelta(next, current) * amount);
+      }
+
+      function setPermissionStatus(key, status) {
+        const row = document.querySelector(`[data-permission="${key}"]`);
+        if (!row) return;
+        const dot = row.querySelector(".permission-dot");
+        const label = row.querySelector(".permission-state");
+        dot.dataset.state = status;
+        label.textContent = permissionLabels[status] || status;
+      }
+
+      function checkPassiveCapabilities() {
+        setPermissionStatus("haptics", "vibrate" in navigator ? "ready" : "limited");
+        setPermissionStatus("wake", "wakeLock" in navigator ? "prompt" : "limited");
+        if (!("DeviceOrientationEvent" in window)) setPermissionStatus("compass", "limited");
+        if (!("DeviceMotionEvent" in window)) setPermissionStatus("motion", "limited");
+      }
+
+      async function readInitialPermissions() {
+        checkPassiveCapabilities();
+      }
+
+      async function requestCamera() {
+        setPermissionStatus("camera", "requesting");
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setPermissionStatus("camera", "limited");
+          throw new Error("Camera API is unavailable in this browser.");
+        }
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              facingMode: { ideal: "environment" },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
+          });
+
+          state.stream = stream;
+          els.cameraFeed.srcObject = stream;
+          await els.cameraFeed.play();
+          setPermissionStatus("camera", "granted");
+        } catch (error) {
+          setPermissionStatus("camera", "denied");
+          throw error;
+        }
+      }
+
+      function getCurrentPosition() {
+        setPermissionStatus("location", "requesting");
+        if (!navigator.geolocation) {
+          throw new Error("Geolocation is unavailable in this browser.");
+        }
+
+        return new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            maximumAge: 30000,
+            timeout: 18000,
+          });
+        });
+      }
+
+      async function requestLocation() {
+        try {
+          const position = await getCurrentPosition();
+          updatePosition(position);
+          setPermissionStatus("location", "granted");
+          if (state.watchId !== null) navigator.geolocation.clearWatch(state.watchId);
+          state.watchId = navigator.geolocation.watchPosition(updatePosition, null, {
+            enableHighAccuracy: true,
+            maximumAge: 45000,
+            timeout: 20000,
+          });
+        } catch (error) {
+          setPermissionStatus("location", "denied");
+          throw error;
+        }
+      }
+
+      async function requestOrientation() {
+        setPermissionStatus("compass", "requesting");
+        if (!("DeviceOrientationEvent" in window)) {
+          setPermissionStatus("compass", "limited");
+          return;
+        }
+
+        try {
+          if (typeof DeviceOrientationEvent.requestPermission === "function") {
+            const result = await DeviceOrientationEvent.requestPermission();
+            if (result !== "granted") {
+              setPermissionStatus("compass", "denied");
+              throw new Error("Compass permission was not granted.");
+            }
+          }
+
+          window.addEventListener("deviceorientation", handleOrientation, true);
+          setPermissionStatus("compass", "granted");
+        } catch (error) {
+          setPermissionStatus("compass", "denied");
+          throw error;
+        }
+      }
+
+      async function requestMotion() {
+        setPermissionStatus("motion", "requesting");
+        if (!("DeviceMotionEvent" in window)) {
+          setPermissionStatus("motion", "limited");
+          return;
+        }
+
+        try {
+          if (typeof DeviceMotionEvent.requestPermission === "function") {
+            const result = await DeviceMotionEvent.requestPermission();
+            if (result !== "granted") {
+              setPermissionStatus("motion", "denied");
+              throw new Error("Gyro permission was not granted.");
+            }
+          }
+
+          window.addEventListener("devicemotion", handleMotion, true);
+          setPermissionStatus("motion", "granted");
+        } catch (error) {
+          setPermissionStatus("motion", "denied");
+          throw error;
+        }
+      }
+
+      async function requestWakeLock() {
+        setPermissionStatus("wake", "requesting");
+        if (!("wakeLock" in navigator)) {
+          setPermissionStatus("wake", "limited");
+          return;
+        }
+
+        try {
+          state.wakeLock = await navigator.wakeLock.request("screen");
+          state.wakeLock.addEventListener("release", () => {
+            state.wakeLock = null;
+            setPermissionStatus("wake", "prompt");
+          });
+          setPermissionStatus("wake", "granted");
+        } catch {
+          setPermissionStatus("wake", "limited");
+        }
+      }
+
+      function handleOrientation(event) {
+        let nextHeading = null;
+
+        if (typeof event.webkitCompassHeading === "number") {
+          nextHeading = event.webkitCompassHeading;
+          state.headingSource = "true compass";
+        } else if (typeof event.alpha === "number") {
+          nextHeading = normalizeDegrees(360 - event.alpha);
+          state.headingSource = event.absolute ? "absolute compass" : "relative compass";
+        }
+
+        if (nextHeading !== null) {
+          state.heading = smoothAngle(state.heading, nextHeading);
+        }
+
+        if (typeof event.beta === "number") state.orientation.beta = event.beta;
+        if (typeof event.gamma === "number") state.orientation.gamma = event.gamma;
+        queueRender();
+      }
+
+      function handleMotion(event) {
+        if (event.rotationRate?.alpha || event.rotationRate?.beta || event.rotationRate?.gamma) {
+          setPermissionStatus("motion", "granted");
+        }
+      }
+
+      function updatePosition(position) {
+        state.position = position;
+        state.sun = calculateSun(position.coords.latitude, position.coords.longitude, new Date());
+        renderSunReadouts();
+        queueRender();
+      }
+
+      function dayOfYear(date) {
+        const start = new Date(date.getFullYear(), 0, 0);
+        return Math.floor((date - start) / 86400000);
+      }
+
+      function calculateSun(latitude, longitude, date) {
+        const day = dayOfYear(date);
+        const gamma = (2 * Math.PI * (day - 1)) / 365;
+        const eqTime =
+          229.18 *
+          (0.000075 +
+            0.001868 * Math.cos(gamma) -
+            0.032077 * Math.sin(gamma) -
+            0.014615 * Math.cos(2 * gamma) -
+            0.040849 * Math.sin(2 * gamma));
+        const decl =
+          0.006918 -
+          0.399912 * Math.cos(gamma) +
+          0.070257 * Math.sin(gamma) -
+          0.006758 * Math.cos(2 * gamma) +
+          0.000907 * Math.sin(2 * gamma) -
+          0.002697 * Math.cos(3 * gamma) +
+          0.00148 * Math.sin(3 * gamma);
+
+        const phi = toRad(latitude);
+        const elevation = toRad(-0.833);
+        const cosHourAngle =
+          (Math.sin(elevation) - Math.sin(phi) * Math.sin(decl)) /
+          (Math.cos(phi) * Math.cos(decl));
+
+        if (cosHourAngle > 1 || cosHourAngle < -1) {
+          return {
+            error: "Solar horizon event is not available at this latitude today.",
+          };
+        }
+
+        const hourAngle = Math.acos(clamp(cosHourAngle, -1, 1));
+        const timezone = -date.getTimezoneOffset() / 60;
+        const solarNoon = 720 - eqTime - 4 * longitude + 60 * timezone;
+        const sunriseMinutes = solarNoon - toDeg(hourAngle) * 4;
+        const sunsetMinutes = solarNoon + toDeg(hourAngle) * 4;
+
+        return {
+          sunrise: {
+            azimuth: solarAzimuth(-hourAngle, phi, decl),
+            minutes: sunriseMinutes,
+          },
+          sunset: {
+            azimuth: solarAzimuth(hourAngle, phi, decl),
+            minutes: sunsetMinutes,
+          },
+        };
+      }
+
+      function solarAzimuth(hourAngle, latitudeRad, declinationRad) {
+        return normalizeDegrees(
+          toDeg(
+            Math.atan2(
+              Math.sin(hourAngle),
+              Math.cos(hourAngle) * Math.sin(latitudeRad) -
+                Math.tan(declinationRad) * Math.cos(latitudeRad)
+            )
+          ) + 180
+        );
+      }
+
+      function formatSolarTime(minutes, date = new Date()) {
+        const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const time = new Date(midnight.getTime() + minutes * 60000);
+        return time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      }
+
+      function renderSunReadouts() {
+        if (!state.position || !state.sun || state.sun.error) {
+          els.locationReadout.textContent = state.sun?.error || "GPS pending";
+          return;
+        }
+
+        const { latitude, longitude, accuracy } = state.position.coords;
+        els.sunriseBearing.textContent = `${Math.round(state.sun.sunrise.azimuth)}°`;
+        els.sunsetBearing.textContent = `${Math.round(state.sun.sunset.azimuth)}°`;
+        els.sunriseTime.textContent = formatSolarTime(state.sun.sunrise.minutes);
+        els.sunsetTime.textContent = formatSolarTime(state.sun.sunset.minutes);
+        els.locationReadout.textContent = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} · ±${Math.round(accuracy)}m`;
+      }
+
+      function queueRender() {
+        if (state.renderQueued) return;
+        state.renderQueued = true;
+        requestAnimationFrame(() => {
+          state.renderQueued = false;
+          renderAR();
+        });
+      }
+
+      function renderAR() {
+        if (!state.sun || state.sun.error) return;
+        if (state.heading === null) {
+          els.targetStatus.textContent = "Calibrating compass";
+          return;
+        }
+
+        els.headingValue.textContent = `${Math.round(state.heading)}°`;
+        const sunrise = projectTarget("sunrise", state.sun.sunrise, els.sunriseMarker, els.sunrisePip);
+        const sunset = projectTarget("sunset", state.sun.sunset, els.sunsetMarker, els.sunsetPip);
+        const closest = Math.abs(sunrise.diff) <= Math.abs(sunset.diff) ? sunrise : sunset;
+        const abs = Math.abs(closest.diff);
+        const direction = closest.diff > 0 ? "right" : "left";
+
+        els.reticle.classList.toggle("is-locked", abs < 6);
+        if (abs < 6) {
+          els.targetStatus.textContent = `${closest.label} aligned`;
+          pulse(closest.key);
+        } else {
+          state.lockedKey = null;
+          els.targetStatus.textContent = `${closest.label} ${Math.round(abs)}° ${direction}`;
+        }
+      }
+
+      function projectTarget(key, target, marker, pip) {
+        const diff = signedDelta(target.azimuth, state.heading);
+        const abs = Math.abs(diff);
+        const x = clamp(50 + (diff / 58) * 50, 8, 92);
+        const y = clamp(44 + (state.orientation.beta / 80) * 14, 28, 70);
+        const pipX = clamp(50 + (diff / 105) * 50, 8, 92);
+
+        marker.style.setProperty("--x", `${x}%`);
+        marker.style.setProperty("--y", `${y}%`);
+        marker.style.setProperty("--scale", abs < 6 ? "1.12" : abs > 72 ? "0.82" : "1");
+        marker.classList.toggle("is-edge", abs > 72);
+        marker.classList.toggle("is-locked", abs < 6);
+        pip.style.setProperty("--pip-x", `${pipX}%`);
+
+        return {
+          key,
+          diff,
+          label: key === "sunrise" ? "Sunrise" : "Sunset",
+        };
+      }
+
+      function pulse(key) {
+        if (!state.haptics || !("vibrate" in navigator)) return;
+        const now = Date.now();
+        if (state.lockedKey === key && now - state.lastVibrateAt < 1800) return;
+        state.lockedKey = key;
+        state.lastVibrateAt = now;
+        navigator.vibrate([35, 30, 70]);
+      }
+
+      async function refreshLocation() {
+        try {
+          els.locationReadout.textContent = "Refreshing GPS";
+          const position = await getCurrentPosition();
+          updatePosition(position);
+          setPermissionStatus("location", "granted");
+        } catch (error) {
+          els.locationReadout.textContent = error.message || "GPS refresh failed";
+        }
+      }
+
+      async function startSkyMode() {
+        els.startButton.disabled = true;
+        els.startButton.classList.add("opacity-75");
+        els.permissionNote.textContent = "Opening sensors";
+
+        const requests = await Promise.allSettled([
+          requestOrientation(),
+          requestMotion(),
+          requestCamera(),
+          requestLocation(),
+          requestWakeLock(),
+        ]);
+
+        const failures = requests.filter((request) => request.status === "rejected");
+        const hasCamera = Boolean(state.stream);
+        const hasLocation = Boolean(state.position);
+
+        if (!hasCamera || !hasLocation) {
+          failures.forEach((failure) => {
+            const message = failure.reason?.message || "Permission request failed.";
+            if (/camera/i.test(message)) setPermissionStatus("camera", "denied");
+            if (/geo|location|gps/i.test(message)) setPermissionStatus("location", "denied");
+          });
+          els.permissionNote.textContent =
+            failures[0]?.reason?.message || "Camera and GPS are required for sky mode.";
+          els.startButton.disabled = false;
+          els.startButton.classList.remove("opacity-75");
+          return;
+        }
+
+        els.permissionScreen.classList.add("hidden");
+        els.arScreen.classList.remove("hidden");
+        renderSunReadouts();
+        queueRender();
+      }
+
+      function toggleHaptics() {
+        state.haptics = !state.haptics;
+        els.hapticButton.innerHTML = `
+          <span class="touch-target" aria-hidden="true"></span>
+          <i data-lucide="${state.haptics ? "waves" : "volume-x"}" class="size-5 sm:size-4" aria-hidden="true"></i>
+          Haptics ${state.haptics ? "on" : "off"}
+        `;
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      async function promptInstall() {
+        if (!installPrompt) return;
+        installPrompt.prompt();
+        await installPrompt.userChoice;
+        installPrompt = null;
+        els.installButton.classList.add("hidden");
+        els.installButton.classList.remove("flex");
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && !state.wakeLock) {
+          requestWakeLock();
+        }
+      });
+
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        installPrompt = event;
+        els.installButton.classList.remove("hidden");
+        els.installButton.classList.add("flex");
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      window.addEventListener("appinstalled", () => {
+        installPrompt = null;
+        els.installButton.classList.add("hidden");
+        els.installButton.classList.remove("flex");
+      });
+
+      els.startButton.addEventListener("click", startSkyMode);
+      els.refreshButton.addEventListener("click", refreshLocation);
+      els.hapticButton.addEventListener("click", toggleHaptics);
+      els.installButton.addEventListener("click", promptInstall);
+      window.addEventListener("orientationchange", queueRender);
+
+      readInitialPermissions();
+      if (window.lucide) window.lucide.createIcons();
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
