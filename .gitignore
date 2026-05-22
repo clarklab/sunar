@@ -1,5 +1,8 @@
 # Local Netlify folder
 .netlify
 
+# Claude Code workspace
+.claude
+
 # macOS
 .DS_Store

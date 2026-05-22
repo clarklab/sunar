@@ -131,6 +131,14 @@
         box-sizing: border-box;
       }
 
+      html,
+      body,
+      #app {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
       body {
         margin: 0;
         min-height: 100dvh;
@@ -160,9 +168,20 @@
       .permission-shell {
         background: var(--permission-bg);
         color: var(--permission-text);
+        overflow-x: hidden;
         transition:
           background 700ms ease,
           color 700ms ease;
+      }
+
+      .permission-layout,
+      .permission-card {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .permission-card {
+        overflow-x: hidden;
       }
 
       .glass {
@@ -196,6 +215,7 @@
       .permission-copy,
       .permission-name,
       .permission-detail,
+      .permission-summary-copy,
       .permission-state,
       #permissionNote {
         transition: color 700ms ease;
@@ -203,8 +223,10 @@
 
       .brand-wordmark,
       .app-chip,
+      .permission-copy,
       .permission-state,
       .permission-detail,
+      .permission-summary-copy,
       #permissionNote {
         color: var(--permission-muted) !important;
       }
@@ -229,6 +251,63 @@
         transition:
           background-color 700ms ease,
           color 700ms ease;
+      }
+
+      .setup-orb {
+        display: grid;
+        width: 3.35rem;
+        height: 3.35rem;
+        place-items: center;
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 35% 30%, rgba(255, 247, 237, 0.98), rgba(255, 184, 77, 0.72) 42%, rgba(236, 72, 153, 0.58)),
+          #fb923c;
+        color: #fff7ed;
+        box-shadow:
+          0 16px 34px rgba(249, 115, 22, 0.24),
+          0 0 0 1px rgba(255, 255, 255, 0.32) inset;
+      }
+
+      .permission-chip {
+        min-height: auto;
+        min-width: 0;
+        overflow: hidden;
+        gap: 0.3rem;
+        padding-inline: clamp(0.35rem, 1.6vw, 0.6rem);
+        border: 1px solid var(--permission-border);
+        box-shadow: 0 10px 24px rgba(154, 52, 18, 0.08);
+      }
+
+      .permission-chip .permission-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.875rem;
+        font-stretch: 75%;
+        font-variation-settings:
+          "wdth" 75,
+          "wght" 760;
+      }
+
+      .permission-chip .permission-dot {
+        flex: 0 0 auto;
+        width: 0.48rem;
+        height: 0.48rem;
+      }
+
+      @media (max-width: 360px) {
+        .permission-chip .permission-name {
+          font-size: 0.78rem;
+        }
+      }
+
+      .permission-status-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .permission-summary-copy {
+        overflow-wrap: anywhere;
       }
 
       #startButton {
@@ -313,7 +392,9 @@
         color: var(--horizon-line);
         filter: drop-shadow(0 0 18px rgba(255, 184, 77, 0.26));
         pointer-events: none;
-        transition: color 700ms ease;
+        transition:
+          top 140ms ease-out,
+          color 700ms ease;
       }
 
       .horizon-guide::before {
@@ -369,6 +450,8 @@
         min-width: 9rem;
         opacity: 0.96;
         transition:
+          left 120ms linear,
+          top 140ms ease-out,
           opacity 180ms ease,
           transform 180ms ease;
         will-change: transform, left, top;
@@ -591,6 +674,45 @@
           "wdth" 125,
           "wght" 760;
         box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
+        transition: left 120ms linear;
+        z-index: 2;
+      }
+
+      .bearing-cardinals {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .bearing-cardinal {
+        --pip-x: 50%;
+        position: absolute;
+        left: var(--pip-x);
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: grid;
+        place-items: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 720;
+        font-stretch: 125%;
+        font-variation-settings:
+          "wdth" 125,
+          "wght" 720;
+        color: var(--rail-center);
+        opacity: 0.55;
+        background: transparent;
+        transition:
+          left 120ms linear,
+          opacity 220ms ease,
+          color 700ms ease;
+        z-index: 1;
+      }
+
+      .bearing-cardinal[data-cardinal="N"] {
+        opacity: 0.85;
       }
 
       .permission-dot {
@@ -690,6 +812,12 @@
           padding: 0.65rem;
         }
 
+        .permission-chip {
+          min-height: auto;
+          border-radius: 999px;
+          padding-block: 0.55rem;
+        }
+
         #startButton {
           padding-top: 0.85rem;
           padding-bottom: 0.85rem;
@@ -723,73 +851,55 @@
                 Find the light line.
               </h1>
               <p class="permission-copy mt-5 max-w-[32ch] text-lg/7 font-medium text-pretty text-[#5f2c2f] sm:text-base/7">
-                Open the rear camera, lock local GPS, listen to the compass, and feel a pulse when the marker lands.
+                Tap once, answer the prompts, and Sunar will settle the compass before opening the sky view.
               </p>
             </div>
           </div>
 
           <div class="space-y-4">
             <div class="permission-card soft-panel rounded-[1.75rem] p-4">
-              <div class="grid grid-cols-2 gap-2" role="list" aria-label="Permission status">
-                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="camera">
-                  <div class="flex items-center gap-3">
-                    <span class="permission-dot" data-state="prompt"></span>
-                    <div>
-                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Camera</div>
-                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">rear lens</div>
-                    </div>
+              <div class="rounded-[1.35rem] bg-white/35 p-4">
+                <div class="flex items-center gap-3">
+                  <div class="setup-orb shrink-0" aria-hidden="true">
+                    <i data-lucide="sparkles" class="size-6 sm:size-5"></i>
                   </div>
-                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                  <div class="min-w-0">
+                    <div class="permission-name text-lg font-semibold text-[#2a1518] sm:text-base">One tap setup</div>
+                    <p id="permissionSummary" class="permission-summary-copy mt-1 text-base/6 font-medium text-pretty text-[#7c2d12] sm:text-sm/6" aria-live="polite">
+                      Camera, GPS, compass, and motion start together.
+                    </p>
+                  </div>
                 </div>
-                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="location">
-                  <div class="flex items-center gap-3">
-                    <span class="permission-dot" data-state="prompt"></span>
-                    <div>
-                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">GPS</div>
-                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">local horizon</div>
-                    </div>
-                  </div>
-                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+              </div>
+              <div class="permission-status-grid mt-3 grid gap-2" role="list" aria-label="Sky setup status">
+                <div class="permission-row permission-chip flex items-center justify-center rounded-full bg-white/45 py-2" data-permission="camera" role="listitem">
+                  <span class="permission-dot" data-state="prompt"></span>
+                  <span class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Camera</span>
+                  <span class="permission-state sr-only">prompt</span>
                 </div>
-                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="compass">
-                  <div class="flex items-center gap-3">
-                    <span class="permission-dot" data-state="prompt"></span>
-                    <div>
-                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Compass</div>
-                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">true bearing</div>
-                    </div>
-                  </div>
-                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                <div class="permission-row permission-chip flex items-center justify-center rounded-full bg-white/45 py-2" data-permission="location" role="listitem">
+                  <span class="permission-dot" data-state="prompt"></span>
+                  <span class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">GPS</span>
+                  <span class="permission-state sr-only">prompt</span>
                 </div>
-                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="motion">
-                  <div class="flex items-center gap-3">
-                    <span class="permission-dot" data-state="prompt"></span>
-                    <div>
-                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Gyro</div>
-                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">device tilt</div>
-                    </div>
-                  </div>
-                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                <div class="permission-row permission-chip flex items-center justify-center rounded-full bg-white/45 py-2" data-permission="compass" role="listitem">
+                  <span class="permission-dot" data-state="prompt"></span>
+                  <span class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Compass</span>
+                  <span class="permission-state sr-only">prompt</span>
                 </div>
-                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="haptics">
-                  <div class="flex items-center gap-3">
-                    <span class="permission-dot" data-state="prompt"></span>
-                    <div>
-                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Haptics</div>
-                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">alignment pulse</div>
-                    </div>
-                  </div>
-                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+              </div>
+              <div class="hidden" aria-hidden="true">
+                <div class="permission-row" data-permission="motion">
+                  <span class="permission-dot" data-state="prompt"></span>
+                  <span class="permission-state">prompt</span>
                 </div>
-                <div class="permission-row flex min-h-20 flex-col justify-between gap-2 rounded-2xl bg-white/45 p-3" data-permission="wake">
-                  <div class="flex items-center gap-3">
-                    <span class="permission-dot" data-state="prompt"></span>
-                    <div>
-                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Wake lock</div>
-                      <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">steady view</div>
-                    </div>
-                  </div>
-                  <span class="permission-state text-base font-medium text-[#7c2d12] sm:text-sm">prompt</span>
+                <div class="permission-row" data-permission="haptics">
+                  <span class="permission-dot" data-state="prompt"></span>
+                  <span class="permission-state">prompt</span>
+                </div>
+                <div class="permission-row" data-permission="wake">
+                  <span class="permission-dot" data-state="prompt"></span>
+                  <span class="permission-state">prompt</span>
                 </div>
               </div>
             </div>
@@ -800,11 +910,11 @@
               type="button"
             >
               <i data-lucide="aperture" class="size-6 sm:size-5" aria-hidden="true"></i>
-              Grant sky access
+              <span id="startButtonLabel">Start sky view</span>
             </button>
 
-            <p id="permissionNote" class="min-h-12 text-center text-base/7 font-medium text-pretty text-[#7c2d12] sm:text-sm/6">
-              Mobile browsers need HTTPS or localhost for camera and motion sensors.
+            <p id="permissionNote" class="min-h-12 text-center text-base/7 font-medium text-pretty text-[#7c2d12] sm:text-sm/6" aria-live="polite">
+              Sunar will ask for access once, then open the camera.
             </p>
           </div>
         </div>
@@ -842,16 +952,16 @@
           <div class="glass mx-auto max-w-xl rounded-[1.5rem] p-3">
             <div class="grid grid-cols-3 gap-2 text-center">
               <div class="rounded-2xl bg-white/10 p-3">
-                <div class="font-condensed text-base text-white/68 sm:text-sm">heading</div>
-                <div id="headingValue" class="font-ultra tabular-nums text-2xl font-semibold sm:text-xl">--°</div>
+                <div id="headingCardinal" class="font-condensed text-sm text-white/68">heading</div>
+                <div id="headingValue" class="font-ultra whitespace-nowrap tabular-nums text-xl font-semibold">--°</div>
               </div>
               <div class="rounded-2xl bg-white/10 p-3">
-                <div class="font-condensed text-base text-white/68 sm:text-sm">sunrise</div>
-                <div id="sunriseTime" class="font-ultra tabular-nums text-2xl font-semibold sm:text-xl">--:--</div>
+                <div class="font-condensed text-sm text-white/68">sunrise</div>
+                <div id="sunriseTime" class="font-ultra whitespace-nowrap tabular-nums text-xl font-semibold">--:--</div>
               </div>
               <div class="rounded-2xl bg-white/10 p-3">
-                <div class="font-condensed text-base text-white/68 sm:text-sm">sunset</div>
-                <div id="sunsetTime" class="font-ultra tabular-nums text-2xl font-semibold sm:text-xl">--:--</div>
+                <div class="font-condensed text-sm text-white/68">sunset</div>
+                <div id="sunsetTime" class="font-ultra whitespace-nowrap tabular-nums text-xl font-semibold">--:--</div>
               </div>
             </div>
             <div id="targetStatus" class="mt-3 rounded-2xl bg-white/10 px-4 py-3 text-center text-base/6 font-semibold text-pretty sm:text-sm/6">
@@ -863,6 +973,12 @@
         <div class="fixed inset-x-0 bottom-0 z-20 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
           <div class="glass mx-auto max-w-xl rounded-[1.75rem] p-3">
             <div class="bearing-rail">
+              <div class="bearing-cardinals" aria-hidden="true">
+                <div class="bearing-cardinal" data-cardinal="N">N</div>
+                <div class="bearing-cardinal" data-cardinal="E">E</div>
+                <div class="bearing-cardinal" data-cardinal="S">S</div>
+                <div class="bearing-cardinal" data-cardinal="W">W</div>
+              </div>
               <div
                 id="sunrisePip"
                 class="bearing-pip"
@@ -923,11 +1039,18 @@
         stream: null,
         position: null,
         sun: null,
+        rawHeading: null,
         heading: null,
         headingSource: "waiting",
         orientation: {
           beta: null,
           gamma: null,
+          elevation: null,
+        },
+        horizonY: null,
+        targets: {
+          sunrise: { x: null, y: null, pipX: null, visible: false },
+          sunset: { x: null, y: null, pipX: null, visible: false },
         },
         watchId: null,
         wakeLock: null,
@@ -941,15 +1064,18 @@
         permissionScreen: document.getElementById("permissionScreen"),
         arScreen: document.getElementById("arScreen"),
         startButton: document.getElementById("startButton"),
+        startButtonLabel: document.getElementById("startButtonLabel"),
         refreshButton: document.getElementById("refreshButton"),
         hapticButton: document.getElementById("hapticButton"),
         permissionNote: document.getElementById("permissionNote"),
+        permissionSummary: document.getElementById("permissionSummary"),
         cameraFeed: document.getElementById("cameraFeed"),
         sunriseMarker: document.getElementById("sunriseMarker"),
         sunsetMarker: document.getElementById("sunsetMarker"),
         sunriseBearing: document.getElementById("sunriseBearing"),
         sunsetBearing: document.getElementById("sunsetBearing"),
         headingValue: document.getElementById("headingValue"),
+        headingCardinal: document.getElementById("headingCardinal"),
         sunriseTime: document.getElementById("sunriseTime"),
         sunsetTime: document.getElementById("sunsetTime"),
         targetStatus: document.getElementById("targetStatus"),
@@ -957,6 +1083,7 @@
         horizonGuide: document.getElementById("horizonGuide"),
         sunrisePip: document.getElementById("sunrisePip"),
         sunsetPip: document.getElementById("sunsetPip"),
+        bearingCardinals: document.querySelectorAll(".bearing-cardinal"),
         installButton: document.getElementById("installButton"),
         locationReadout: document.getElementById("locationReadout"),
         reticle: document.getElementById("reticle"),
@@ -968,10 +1095,24 @@
       const AR_VIEW = {
         horizonCenterY: 48,
         horizontalHalfFov: 42,
-        visibleHalfFov: 48,
+        showHalfFov: 46,
+        hideHalfFov: 56,
         verticalHalfFov: 52,
         horizonMarkerGap: 5,
       };
+
+      const CARDINAL_BEARINGS = [
+        { key: "N", azimuth: 0 },
+        { key: "E", azimuth: 90 },
+        { key: "S", azimuth: 180 },
+        { key: "W", azimuth: 270 },
+      ];
+
+      const CARDINAL_OCTANTS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
+      function cardinalFromBearing(deg) {
+        return CARDINAL_OCTANTS[Math.round(normalizeDegrees(deg) / 45) % 8];
+      }
 
       const permissionLabels = {
         prompt: "prompt",
@@ -1031,9 +1172,50 @@
         applySkyTheme(date >= sunrise && date < sunset ? "day" : "night");
       }
 
-      function smoothAngle(current, next, amount = 0.18) {
+      function smoothingAmount(delta, minAmount, maxAmount, fullSpeedAt) {
+        return minAmount + (maxAmount - minAmount) * clamp(Math.abs(delta) / fullSpeedAt, 0, 1);
+      }
+
+      function smoothValue(current, next, options = {}) {
+        const {
+          minAmount = 0.08,
+          maxAmount = 0.28,
+          fullSpeedAt = 24,
+          deadband = 0.12,
+        } = options;
+
+        if (typeof next !== "number" || Number.isNaN(next)) return current;
+        if (current === null || Number.isNaN(current)) return next;
+
+        const delta = next - current;
+        if (Math.abs(delta) < deadband) return current;
+
+        return current + delta * smoothingAmount(delta, minAmount, maxAmount, fullSpeedAt);
+      }
+
+      function smoothAngle(current, next, options = {}) {
+        const {
+          minAmount = 0.035,
+          maxAmount = 0.28,
+          fullSpeedAt = 65,
+          deadband = 0.7,
+        } = options;
+
         if (current === null || Number.isNaN(current)) return normalizeDegrees(next);
-        return normalizeDegrees(current + signedDelta(next, current) * amount);
+        const delta = signedDelta(next, current);
+        if (Math.abs(delta) < deadband) return current;
+
+        return normalizeDegrees(current + delta * smoothingAmount(delta, minAmount, maxAmount, fullSpeedAt));
+      }
+
+      function sleep(ms) {
+        return new Promise((resolve) => window.setTimeout(resolve, ms));
+      }
+
+      function setStartupCopy({ label, summary, note }) {
+        if (label) els.startButtonLabel.textContent = label;
+        if (summary) els.permissionSummary.textContent = summary;
+        if (note) els.permissionNote.textContent = note;
       }
 
       function setPermissionStatus(key, status) {
@@ -1194,13 +1376,17 @@
           state.headingSource = event.absolute ? "absolute compass" : "relative compass";
         }
 
-        if (nextHeading !== null) {
-          state.heading = smoothAngle(state.heading, nextHeading);
-        }
+        if (nextHeading !== null) state.rawHeading = normalizeDegrees(nextHeading);
 
         if (typeof event.beta === "number") state.orientation.beta = event.beta;
         if (typeof event.gamma === "number") state.orientation.gamma = event.gamma;
         queueRender();
+      }
+
+      function smoothSensorState() {
+        if (state.rawHeading !== null) {
+          state.heading = smoothAngle(state.heading, state.rawHeading);
+        }
       }
 
       function getCameraElevation() {
@@ -1223,15 +1409,30 @@
       }
 
       function updateHorizonGuide() {
-        const elevation = getCameraElevation();
-        const horizonY =
-          elevation === null
+        const rawElevation = getCameraElevation();
+        state.orientation.elevation = smoothValue(state.orientation.elevation, rawElevation, {
+          minAmount: 0.08,
+          maxAmount: 0.24,
+          fullSpeedAt: 26,
+          deadband: 0.18,
+        });
+
+        const horizonRawY =
+          rawElevation === null
             ? AR_VIEW.horizonCenterY
             : clamp(
-                AR_VIEW.horizonCenterY + (elevation / AR_VIEW.verticalHalfFov) * 42,
+                AR_VIEW.horizonCenterY + (state.orientation.elevation / AR_VIEW.verticalHalfFov) * 42,
                 10,
                 90
               );
+        state.horizonY = smoothValue(state.horizonY, horizonRawY, {
+          minAmount: 0.1,
+          maxAmount: 0.26,
+          fullSpeedAt: 18,
+          deadband: 0.12,
+        });
+
+        const horizonY = state.horizonY ?? horizonRawY;
         const horizonValue = `${horizonY}%`;
 
         els.horizonMask.style.setProperty("--horizon-y", horizonValue);
@@ -1239,9 +1440,9 @@
 
         return {
           y: horizonY,
-          ready: elevation !== null,
+          ready: rawElevation !== null,
           visible: horizonY >= 18 && horizonY <= 84,
-          elevation,
+          elevation: state.orientation.elevation,
         };
       }
 
@@ -1337,7 +1538,8 @@
 
       function formatSolarTime(minutes, date = new Date()) {
         const time = minutesToDate(minutes, date);
-        return time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        const formatted = time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        return formatted.replace(/\s+(AM|PM)$/i, (_, p) => p.toLowerCase());
       }
 
       function renderSunReadouts() {
@@ -1365,6 +1567,7 @@
 
       function renderAR() {
         if (!state.sun || state.sun.error) return;
+        smoothSensorState();
         const horizon = updateHorizonGuide();
 
         if (state.heading === null) {
@@ -1373,6 +1576,8 @@
         }
 
         els.headingValue.textContent = `${Math.round(state.heading)}°`;
+        els.headingCardinal.textContent = `facing ${cardinalFromBearing(state.heading)}`;
+        updateCardinalTicks(state.heading);
         const sunrise = projectTarget("sunrise", state.sun.sunrise, els.sunriseMarker, els.sunrisePip, horizon);
         const sunset = projectTarget("sunset", state.sun.sunset, els.sunsetMarker, els.sunsetPip, horizon);
         const closest = Math.abs(sunrise.diff) <= Math.abs(sunset.diff) ? sunrise : sunset;
@@ -1401,20 +1606,42 @@
       }
 
       function projectTarget(key, target, marker, pip, horizon) {
+        const targetState = state.targets[key];
         const diff = signedDelta(target.azimuth, state.heading);
         const abs = Math.abs(diff);
-        const visible = horizon.visible && abs <= AR_VIEW.visibleHalfFov;
-        const x = clamp(50 + (diff / AR_VIEW.horizontalHalfFov) * 42, 8, 92);
-        const y = clamp(horizon.y - AR_VIEW.horizonMarkerGap, 16, 78);
-        const pipX = clamp(50 + (diff / 180) * 43, 7, 93);
+        const visibilityLimit = targetState.visible ? AR_VIEW.hideHalfFov : AR_VIEW.showHalfFov;
+        const visible = horizon.visible && abs <= visibilityLimit;
+        const xRaw = clamp(50 + (diff / AR_VIEW.horizontalHalfFov) * 42, 8, 92);
+        const yRaw = clamp(horizon.y - AR_VIEW.horizonMarkerGap, 16, 78);
+        const pipRawX = clamp(50 + (diff / 180) * 43, 7, 93);
 
-        marker.style.setProperty("--x", `${x}%`);
-        marker.style.setProperty("--y", `${y}%`);
+        targetState.x = smoothValue(targetState.x, xRaw, {
+          minAmount: 0.14,
+          maxAmount: 0.42,
+          fullSpeedAt: 24,
+          deadband: 0.18,
+        });
+        targetState.y = smoothValue(targetState.y, yRaw, {
+          minAmount: 0.1,
+          maxAmount: 0.28,
+          fullSpeedAt: 16,
+          deadband: 0.12,
+        });
+        targetState.pipX = smoothValue(targetState.pipX, pipRawX, {
+          minAmount: 0.14,
+          maxAmount: 0.38,
+          fullSpeedAt: 20,
+          deadband: 0.16,
+        });
+        targetState.visible = visible;
+
+        marker.style.setProperty("--x", `${targetState.x}%`);
+        marker.style.setProperty("--y", `${targetState.y}%`);
         marker.style.setProperty("--scale", visible && abs < 6 ? "1.12" : "1");
         marker.classList.toggle("is-edge", !visible && abs <= 115);
         marker.classList.toggle("is-offscreen", !visible);
         marker.classList.toggle("is-locked", visible && abs < 6);
-        pip.style.setProperty("--pip-x", `${pipX}%`);
+        pip.style.setProperty("--pip-x", `${targetState.pipX}%`);
 
         return {
           key,
@@ -1422,6 +1649,18 @@
           visible,
           label: key === "sunrise" ? "Sunrise" : "Sunset",
         };
+      }
+
+      function updateCardinalTicks(heading) {
+        els.bearingCardinals.forEach((node) => {
+          const card = CARDINAL_BEARINGS.find((c) => c.key === node.dataset.cardinal);
+          if (!card) return;
+          const diff = signedDelta(card.azimuth, heading);
+          const x = clamp(50 + (diff / 180) * 47, 4, 96);
+          const behind = Math.abs(diff) > 90;
+          node.style.setProperty("--pip-x", `${x}%`);
+          node.style.opacity = behind ? "0.25" : (card.key === "N" ? "0.85" : "0.55");
+        });
       }
 
       function pulse(key) {
@@ -1444,10 +1683,38 @@
         }
       }
 
+      async function settleSensors() {
+        const startedAt = performance.now();
+        const minSettleMs = 900;
+        const maxSettleMs = 1800;
+
+        while (performance.now() - startedAt < maxSettleMs) {
+          smoothSensorState();
+          updateHorizonGuide();
+
+          const hasMinimumTime = performance.now() - startedAt >= minSettleMs;
+          const hasCompass = state.heading !== null;
+          const hasTilt = state.orientation.elevation !== null;
+          if (hasMinimumTime && hasCompass && hasTilt) break;
+
+          await sleep(70);
+        }
+
+        for (let frame = 0; frame < 8; frame += 1) {
+          smoothSensorState();
+          updateHorizonGuide();
+          await sleep(32);
+        }
+      }
+
       async function startSkyMode() {
         els.startButton.disabled = true;
         els.startButton.classList.add("opacity-75");
-        els.permissionNote.textContent = "Opening sensors";
+        setStartupCopy({
+          label: "Opening sky view",
+          summary: "Answer the prompts as they appear.",
+          note: "Requesting camera, GPS, compass, and motion.",
+        });
 
         const requests = await Promise.allSettled([
           requestOrientation(),
@@ -1467,12 +1734,22 @@
             if (/camera/i.test(message)) setPermissionStatus("camera", "denied");
             if (/geo|location|gps/i.test(message)) setPermissionStatus("location", "denied");
           });
-          els.permissionNote.textContent =
-            failures[0]?.reason?.message || "Camera and GPS are required for sky mode.";
+          setStartupCopy({
+            label: "Start sky view",
+            summary: "Camera and GPS are required for AR sky mode.",
+            note: failures[0]?.reason?.message || "Camera and GPS are required for sky mode.",
+          });
           els.startButton.disabled = false;
           els.startButton.classList.remove("opacity-75");
           return;
         }
+
+        setStartupCopy({
+          label: "Calibrating",
+          summary: "Holding the compass still for a steadier first view.",
+          note: "Opening the horizon now.",
+        });
+        await settleSensors();
 
         els.permissionScreen.classList.add("hidden");
         els.arScreen.classList.remove("hidden");
