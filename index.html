@@ -4,9 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Sunar is a calming AR compass app for finding today's local sunrise and sunset directions." />
-    <meta name="theme-color" content="#2a1518" />
-    <meta name="theme-color" content="#fff7ed" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#2a1518" media="(prefers-color-scheme: dark)" />
+    <meta id="themeColorMeta" name="theme-color" content="#2a1518" />
     <meta name="color-scheme" content="dark light" />
     <meta name="application-name" content="Sunar" />
     <meta name="apple-mobile-web-app-title" content="Sunar" />
@@ -55,6 +53,80 @@
         font-feature-settings: "ss01", "ss03", "cv02", "cv11";
       }
 
+      body[data-sky-theme="day"] {
+        color-scheme: light;
+        --app-bg: #fff7ed;
+        --permission-bg:
+          linear-gradient(160deg, rgba(255, 247, 237, 0.98) 0%, rgba(255, 228, 230, 0.95) 54%, rgba(254, 215, 170, 0.94) 100%),
+          #fff7ed;
+        --permission-text: #2a1518;
+        --permission-muted: #6b2e32;
+        --permission-accent: #be123c;
+        --permission-panel: rgba(255, 255, 255, 0.58);
+        --permission-row: rgba(255, 255, 255, 0.45);
+        --permission-border: rgba(42, 21, 24, 0.1);
+        --primary-button-bg: #2a1518;
+        --primary-button-text: #fff7ed;
+        --glass-bg: rgba(255, 247, 237, 0.66);
+        --glass-border: rgba(42, 21, 24, 0.14);
+        --glass-shadow: 0 20px 70px rgba(154, 52, 18, 0.16);
+        --panel-text: #2a1518;
+        --panel-muted: rgba(42, 21, 24, 0.68);
+        --panel-tile: rgba(42, 21, 24, 0.07);
+        --panel-control: rgba(255, 255, 255, 0.42);
+        --panel-control-border: rgba(42, 21, 24, 0.18);
+        --ar-top: rgba(255, 247, 237, 0.38);
+        --ar-mid: rgba(255, 247, 237, 0.02);
+        --ar-bottom: rgba(42, 21, 24, 0.36);
+        --horizon-mask: linear-gradient(180deg, rgba(255, 247, 237, 0.02), rgba(42, 21, 24, 0.22));
+        --horizon-grid: rgba(42, 21, 24, 0.035);
+        --horizon-line: rgba(42, 21, 24, 0.58);
+        --horizon-label-bg: rgba(255, 247, 237, 0.68);
+        --horizon-label-text: rgba(42, 21, 24, 0.72);
+        --reticle-line: rgba(42, 21, 24, 0.58);
+        --reticle-glow: rgba(255, 184, 77, 0.2);
+        --rail-bg: rgba(42, 21, 24, 0.08);
+        --rail-border: rgba(42, 21, 24, 0.14);
+        --rail-center: rgba(42, 21, 24, 0.72);
+      }
+
+      body[data-sky-theme="night"] {
+        color-scheme: dark;
+        --app-bg: #130f13;
+        --permission-bg:
+          linear-gradient(160deg, rgba(42, 21, 24, 0.98) 0%, rgba(69, 26, 54, 0.96) 52%, rgba(17, 24, 39, 0.97) 100%),
+          #130f13;
+        --permission-text: #fff7ed;
+        --permission-muted: rgba(255, 237, 213, 0.72);
+        --permission-accent: #ffb84d;
+        --permission-panel: rgba(255, 255, 255, 0.09);
+        --permission-row: rgba(255, 255, 255, 0.08);
+        --permission-border: rgba(255, 255, 255, 0.12);
+        --primary-button-bg: #fff7ed;
+        --primary-button-text: #2a1518;
+        --glass-bg: rgba(19, 15, 19, 0.58);
+        --glass-border: rgba(255, 255, 255, 0.14);
+        --glass-shadow: 0 20px 70px rgba(19, 15, 19, 0.24);
+        --panel-text: #fff7ed;
+        --panel-muted: rgba(255, 255, 255, 0.68);
+        --panel-tile: rgba(255, 255, 255, 0.1);
+        --panel-control: rgba(255, 255, 255, 0.12);
+        --panel-control-border: rgba(255, 255, 255, 0.12);
+        --ar-top: rgba(18, 13, 16, 0.62);
+        --ar-mid: rgba(18, 13, 16, 0.04);
+        --ar-bottom: rgba(18, 13, 16, 0.74);
+        --horizon-mask: linear-gradient(180deg, rgba(19, 15, 19, 0.02), rgba(19, 15, 19, 0.42));
+        --horizon-grid: rgba(255, 255, 255, 0.035);
+        --horizon-line: rgba(255, 236, 198, 0.76);
+        --horizon-label-bg: rgba(19, 15, 19, 0.5);
+        --horizon-label-text: rgba(255, 255, 255, 0.76);
+        --reticle-line: rgba(255, 255, 255, 0.62);
+        --reticle-glow: rgba(255, 255, 255, 0.18);
+        --rail-bg: rgba(255, 255, 255, 0.12);
+        --rail-border: rgba(255, 255, 255, 0.12);
+        --rail-center: rgba(255, 255, 255, 0.82);
+      }
+
       * {
         box-sizing: border-box;
       }
@@ -62,8 +134,11 @@
       body {
         margin: 0;
         min-height: 100dvh;
-        background: #130f13;
+        background: var(--app-bg);
         overflow: hidden;
+        transition:
+          background-color 700ms ease,
+          color 700ms ease;
       }
 
       .font-ultra {
@@ -83,23 +158,120 @@
       }
 
       .permission-shell {
-        background:
-          linear-gradient(160deg, rgba(255, 247, 237, 0.98) 0%, rgba(255, 228, 230, 0.95) 54%, rgba(254, 215, 170, 0.94) 100%),
-          #fff7ed;
+        background: var(--permission-bg);
+        color: var(--permission-text);
+        transition:
+          background 700ms ease,
+          color 700ms ease;
       }
 
       .glass {
-        background: rgba(19, 15, 19, 0.52);
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        box-shadow: 0 20px 70px rgba(19, 15, 19, 0.24);
+        color: var(--panel-text);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
         backdrop-filter: blur(18px);
+        transition:
+          background-color 700ms ease,
+          border-color 700ms ease,
+          box-shadow 700ms ease,
+          color 700ms ease;
       }
 
       .soft-panel {
-        background: rgba(255, 255, 255, 0.58);
-        border: 1px solid rgba(42, 21, 24, 0.1);
+        background: var(--permission-panel);
+        border: 1px solid var(--permission-border);
         box-shadow: 0 18px 50px rgba(154, 52, 18, 0.1);
         backdrop-filter: blur(16px);
+        transition:
+          background-color 700ms ease,
+          border-color 700ms ease,
+          box-shadow 700ms ease;
+      }
+
+      .brand-wordmark,
+      .app-chip,
+      .permission-eyebrow,
+      .permission-title,
+      .permission-copy,
+      .permission-name,
+      .permission-detail,
+      .permission-state,
+      #permissionNote {
+        transition: color 700ms ease;
+      }
+
+      .brand-wordmark,
+      .app-chip,
+      .permission-state,
+      .permission-detail,
+      #permissionNote {
+        color: var(--permission-muted) !important;
+      }
+
+      .permission-eyebrow {
+        color: var(--permission-accent) !important;
+      }
+
+      .permission-title,
+      .permission-name,
+      .permission-row {
+        color: var(--permission-text) !important;
+      }
+
+      .app-chip {
+        background: var(--permission-row) !important;
+        border-color: var(--permission-border) !important;
+      }
+
+      .permission-row {
+        background: var(--permission-row) !important;
+        transition:
+          background-color 700ms ease,
+          color 700ms ease;
+      }
+
+      #startButton {
+        background: var(--primary-button-bg) !important;
+        color: var(--primary-button-text) !important;
+        box-shadow: 0 0 0 2px var(--primary-button-bg);
+        transition:
+          background-color 700ms ease,
+          color 700ms ease,
+          box-shadow 700ms ease,
+          opacity 180ms ease;
+      }
+
+      .glass .rounded-2xl {
+        background: var(--panel-tile) !important;
+        transition:
+          background-color 700ms ease,
+          color 700ms ease;
+      }
+
+      .glass .font-condensed {
+        color: var(--panel-muted) !important;
+      }
+
+      .glass .font-ultra,
+      #targetStatus {
+        color: var(--panel-text) !important;
+      }
+
+      #refreshButton,
+      #hapticButton,
+      #installButton {
+        background: var(--panel-control) !important;
+        color: var(--panel-text) !important;
+        box-shadow: inset 0 0 0 1px var(--panel-control-border) !important;
+        transition:
+          background-color 700ms ease,
+          color 700ms ease,
+          box-shadow 700ms ease;
+      }
+
+      #locationReadout {
+        color: var(--panel-muted) !important;
       }
 
       .camera-feed {
@@ -113,8 +285,76 @@
 
       .ar-vignette {
         background:
-          linear-gradient(180deg, rgba(18, 13, 16, 0.62), rgba(18, 13, 16, 0.04) 34%, rgba(18, 13, 16, 0.74)),
+          linear-gradient(180deg, var(--ar-top), var(--ar-mid) 34%, var(--ar-bottom)),
           linear-gradient(90deg, rgba(18, 13, 16, 0.24), rgba(18, 13, 16, 0), rgba(18, 13, 16, 0.24));
+        transition: background 700ms ease;
+      }
+
+      .horizon-mask {
+        --horizon-y: 48%;
+        position: fixed;
+        inset: 0;
+        clip-path: polygon(0 var(--horizon-y), 100% var(--horizon-y), 100% 100%, 0 100%);
+        background:
+          var(--horizon-mask),
+          repeating-linear-gradient(0deg, var(--horizon-grid) 0 1px, transparent 1px 3.5rem);
+        transition: background 700ms ease;
+      }
+
+      .horizon-guide {
+        --horizon-y: 48%;
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: var(--horizon-y);
+        z-index: 8;
+        height: 0;
+        transform: translateY(-50%);
+        color: var(--horizon-line);
+        filter: drop-shadow(0 0 18px rgba(255, 184, 77, 0.26));
+        pointer-events: none;
+        transition: color 700ms ease;
+      }
+
+      .horizon-guide::before {
+        content: "";
+        position: absolute;
+        left: 1rem;
+        right: 1rem;
+        top: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--horizon-line), transparent);
+        box-shadow: 0 0 18px rgba(255, 184, 77, 0.24);
+      }
+
+      .horizon-guide::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: -0.45rem;
+        width: 0.65rem;
+        height: 0.65rem;
+        transform: translateX(-50%) rotate(45deg);
+        border-top: 1px solid currentColor;
+        border-left: 1px solid currentColor;
+      }
+
+      .horizon-guide span {
+        position: absolute;
+        left: 50%;
+        top: 0.55rem;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: var(--horizon-label-bg);
+        padding: 0.2rem 0.62rem;
+        color: var(--horizon-label-text);
+        font-size: 0.82rem;
+        font-weight: 680;
+        font-stretch: 125%;
+        font-variation-settings:
+          "wdth" 125,
+          "wght" 680;
+        text-shadow: 0 1px 12px rgba(0, 0, 0, 0.42);
       }
 
       .target-marker {
@@ -138,8 +378,48 @@
         opacity: 0.66;
       }
 
+      .target-marker.is-offscreen {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.62);
+      }
+
+      .target-rays {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 13rem;
+        aspect-ratio: 1;
+        transform: translate(-50%, -50%);
+        border-radius: 999px;
+        opacity: 0.68;
+        mix-blend-mode: screen;
+        filter: blur(0.5px);
+        animation: rays-spin 18s linear infinite;
+      }
+
+      .target-rays::before,
+      .target-rays::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+      }
+
+      .target-rays::before {
+        background: repeating-conic-gradient(from 8deg, currentColor 0deg 5deg, transparent 5deg 17deg);
+        -webkit-mask-image: radial-gradient(circle, transparent 0 34%, black 35% 58%, transparent 72%);
+        mask-image: radial-gradient(circle, transparent 0 34%, black 35% 58%, transparent 72%);
+      }
+
+      .target-rays::after {
+        inset: 18%;
+        background: radial-gradient(circle, currentColor, transparent 68%);
+        opacity: 0.38;
+      }
+
       .target-dot {
         position: relative;
+        z-index: 1;
         display: grid;
         width: 7.6rem;
         height: 7.6rem;
@@ -207,11 +487,19 @@
           #fb923c;
       }
 
+      .sunrise .target-rays {
+        color: rgba(255, 184, 77, 0.8);
+      }
+
       .sunset .target-dot {
         color: #ff7aa7;
         background:
           radial-gradient(circle at 36% 28%, rgba(255, 241, 242, 0.95), rgba(251, 113, 133, 0.86) 30%, rgba(219, 39, 119, 0.9) 70%, rgba(136, 19, 55, 0.8)),
           #ec4899;
+      }
+
+      .sunset .target-rays {
+        color: rgba(255, 122, 167, 0.82);
       }
 
       .reticle {
@@ -222,17 +510,20 @@
         aspect-ratio: 1;
         transform: translate(-50%, -50%);
         border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.62);
+        border: 1px solid var(--reticle-line);
         box-shadow:
           0 0 0 1px rgba(42, 21, 24, 0.18),
-          inset 0 0 36px rgba(255, 255, 255, 0.18);
+          inset 0 0 36px var(--reticle-glow);
+        transition:
+          border-color 700ms ease,
+          box-shadow 700ms ease;
       }
 
       .reticle::before,
       .reticle::after {
         content: "";
         position: absolute;
-        background: rgba(255, 255, 255, 0.72);
+        background: var(--reticle-line);
         border-radius: 999px;
       }
 
@@ -263,8 +554,11 @@
         height: 4.75rem;
         overflow: hidden;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.12);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: var(--rail-bg);
+        border: 1px solid var(--rail-border);
+        transition:
+          background-color 700ms ease,
+          border-color 700ms ease;
       }
 
       .bearing-rail::before {
@@ -275,7 +569,7 @@
         height: 62%;
         transform: translate(-50%, -50%);
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.82);
+        background: var(--rail-center);
       }
 
       .bearing-pip {
@@ -351,6 +645,12 @@
         }
       }
 
+      @keyframes rays-spin {
+        to {
+          transform: translate(-50%, -50%) rotate(360deg);
+        }
+      }
+
       @media (min-width: 640px) {
         .target-dot {
           width: 8.5rem;
@@ -397,20 +697,28 @@
       }
     </style>
   </head>
-  <body>
+  <body data-sky-theme="night">
+    <script>
+      (() => {
+        const hour = new Date().getHours();
+        const theme = hour >= 6 && hour < 18 ? "day" : "night";
+        document.body.dataset.skyTheme = theme;
+        document.getElementById("themeColorMeta").content = theme === "day" ? "#fff7ed" : "#2a1518";
+      })();
+    </script>
     <main id="app" class="isolate min-h-dvh overflow-hidden">
       <section id="permissionScreen" class="permission-shell h-dvh overflow-y-auto px-5 py-5 text-[#241214] sm:px-8 sm:py-6">
         <div class="permission-layout mx-auto flex min-h-[calc(100dvh-3rem)] max-w-xl flex-col justify-between gap-8">
           <div class="pt-4">
             <div class="flex items-center justify-between gap-4">
-              <div class="font-condensed text-lg font-semibold text-[#7c2d12] sm:text-base">SUNAR</div>
-              <div class="rounded-full border border-[#7c2d12]/10 bg-white/45 px-3 py-1 text-base font-medium text-[#7c2d12] sm:text-sm">
+              <div class="brand-wordmark font-condensed text-lg font-semibold text-[#7c2d12] sm:text-base">SUNAR</div>
+              <div class="app-chip rounded-full border border-[#7c2d12]/10 bg-white/45 px-3 py-1 text-base font-medium text-[#7c2d12] sm:text-sm">
                 AR sky finder
               </div>
             </div>
 
             <div class="mt-7">
-              <p class="font-condensed text-base font-semibold text-[#be123c] sm:text-sm">sunrise + sunset bearing</p>
+              <p class="permission-eyebrow font-condensed text-base font-semibold text-[#be123c] sm:text-sm">sunrise + sunset bearing</p>
               <h1 class="permission-title font-ultra mt-3 max-w-[10ch] text-5xl font-semibold text-balance text-[#2a1518] sm:text-7xl">
                 Find the light line.
               </h1>
@@ -427,7 +735,7 @@
                   <div class="flex items-center gap-3">
                     <span class="permission-dot" data-state="prompt"></span>
                     <div>
-                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Camera</div>
+                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Camera</div>
                       <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">rear lens</div>
                     </div>
                   </div>
@@ -437,7 +745,7 @@
                   <div class="flex items-center gap-3">
                     <span class="permission-dot" data-state="prompt"></span>
                     <div>
-                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">GPS</div>
+                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">GPS</div>
                       <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">local horizon</div>
                     </div>
                   </div>
@@ -447,7 +755,7 @@
                   <div class="flex items-center gap-3">
                     <span class="permission-dot" data-state="prompt"></span>
                     <div>
-                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Compass</div>
+                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Compass</div>
                       <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">true bearing</div>
                     </div>
                   </div>
@@ -457,7 +765,7 @@
                   <div class="flex items-center gap-3">
                     <span class="permission-dot" data-state="prompt"></span>
                     <div>
-                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Gyro</div>
+                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Gyro</div>
                       <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">device tilt</div>
                     </div>
                   </div>
@@ -467,7 +775,7 @@
                   <div class="flex items-center gap-3">
                     <span class="permission-dot" data-state="prompt"></span>
                     <div>
-                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Haptics</div>
+                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Haptics</div>
                       <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">alignment pulse</div>
                     </div>
                   </div>
@@ -477,7 +785,7 @@
                   <div class="flex items-center gap-3">
                     <span class="permission-dot" data-state="prompt"></span>
                     <div>
-                      <div class="text-base font-semibold text-[#2a1518] sm:text-sm">Wake lock</div>
+                      <div class="permission-name text-base font-semibold text-[#2a1518] sm:text-sm">Wake lock</div>
                       <div class="permission-detail text-base text-[#7c2d12] sm:text-sm">steady view</div>
                     </div>
                   </div>
@@ -505,8 +813,13 @@
       <section id="arScreen" class="hidden min-h-dvh bg-[#130f13] text-white">
         <video id="cameraFeed" class="camera-feed" autoplay muted playsinline></video>
         <div class="ar-vignette pointer-events-none fixed inset-0"></div>
+        <div id="horizonMask" class="horizon-mask pointer-events-none" aria-hidden="true"></div>
+        <div id="horizonGuide" class="horizon-guide pointer-events-none" aria-hidden="true">
+          <span>horizon</span>
+        </div>
 
         <div id="sunriseMarker" class="target-marker sunrise pointer-events-none" aria-hidden="true">
+          <div class="target-rays"></div>
           <div class="target-dot"></div>
           <div class="target-label">
             <span>Sunrise</span>
@@ -515,6 +828,7 @@
         </div>
 
         <div id="sunsetMarker" class="target-marker sunset pointer-events-none" aria-hidden="true">
+          <div class="target-rays"></div>
           <div class="target-dot"></div>
           <div class="target-label">
             <span>Sunset</span>
@@ -612,8 +926,8 @@
         heading: null,
         headingSource: "waiting",
         orientation: {
-          beta: 0,
-          gamma: 0,
+          beta: null,
+          gamma: null,
         },
         watchId: null,
         wakeLock: null,
@@ -639,14 +953,25 @@
         sunriseTime: document.getElementById("sunriseTime"),
         sunsetTime: document.getElementById("sunsetTime"),
         targetStatus: document.getElementById("targetStatus"),
+        horizonMask: document.getElementById("horizonMask"),
+        horizonGuide: document.getElementById("horizonGuide"),
         sunrisePip: document.getElementById("sunrisePip"),
         sunsetPip: document.getElementById("sunsetPip"),
         installButton: document.getElementById("installButton"),
         locationReadout: document.getElementById("locationReadout"),
         reticle: document.getElementById("reticle"),
+        themeColorMeta: document.getElementById("themeColorMeta"),
       };
 
       let installPrompt = null;
+
+      const AR_VIEW = {
+        horizonCenterY: 48,
+        horizontalHalfFov: 42,
+        visibleHalfFov: 48,
+        verticalHalfFov: 52,
+        horizonMarkerGap: 5,
+      };
 
       const permissionLabels = {
         prompt: "prompt",
@@ -677,6 +1002,33 @@
 
       function toDeg(value) {
         return (value * 180) / Math.PI;
+      }
+
+      function minutesToDate(minutes, date = new Date()) {
+        const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        return new Date(midnight.getTime() + minutes * 60000);
+      }
+
+      function applySkyTheme(theme) {
+        if (document.body.dataset.skyTheme === theme) return;
+        document.body.dataset.skyTheme = theme;
+        els.themeColorMeta.content = theme === "day" ? "#fff7ed" : "#2a1518";
+      }
+
+      function applyThemeFromClock(date = new Date()) {
+        const hour = date.getHours();
+        applySkyTheme(hour >= 6 && hour < 18 ? "day" : "night");
+      }
+
+      function applyThemeFromSun(date = new Date()) {
+        if (!state.sun || state.sun.error) {
+          applyThemeFromClock(date);
+          return;
+        }
+
+        const sunrise = minutesToDate(state.sun.sunrise.minutes, date);
+        const sunset = minutesToDate(state.sun.sunset.minutes, date);
+        applySkyTheme(date >= sunrise && date < sunset ? "day" : "night");
       }
 
       function smoothAngle(current, next, amount = 0.18) {
@@ -772,7 +1124,7 @@
 
         try {
           if (typeof DeviceOrientationEvent.requestPermission === "function") {
-            const result = await DeviceOrientationEvent.requestPermission();
+            const result = await DeviceOrientationEvent.requestPermission(true);
             if (result !== "granted") {
               setPermissionStatus("compass", "denied");
               throw new Error("Compass permission was not granted.");
@@ -780,6 +1132,7 @@
           }
 
           window.addEventListener("deviceorientation", handleOrientation, true);
+          window.addEventListener("deviceorientationabsolute", handleOrientation, true);
           setPermissionStatus("compass", "granted");
         } catch (error) {
           setPermissionStatus("compass", "denied");
@@ -850,6 +1203,48 @@
         queueRender();
       }
 
+      function getCameraElevation() {
+        if (typeof state.orientation.beta !== "number") return null;
+
+        const screenAngle =
+          screen.orientation?.angle ??
+          window.orientation ??
+          0;
+
+        if (Math.abs(screenAngle) === 90 && typeof state.orientation.gamma === "number") {
+          return clamp(-state.orientation.gamma, -80, 80);
+        }
+
+        if (Math.abs(screenAngle) === 180) {
+          return clamp(90 - state.orientation.beta, -80, 80);
+        }
+
+        return clamp(state.orientation.beta - 90, -80, 80);
+      }
+
+      function updateHorizonGuide() {
+        const elevation = getCameraElevation();
+        const horizonY =
+          elevation === null
+            ? AR_VIEW.horizonCenterY
+            : clamp(
+                AR_VIEW.horizonCenterY + (elevation / AR_VIEW.verticalHalfFov) * 42,
+                10,
+                90
+              );
+        const horizonValue = `${horizonY}%`;
+
+        els.horizonMask.style.setProperty("--horizon-y", horizonValue);
+        els.horizonGuide.style.setProperty("--horizon-y", horizonValue);
+
+        return {
+          y: horizonY,
+          ready: elevation !== null,
+          visible: horizonY >= 18 && horizonY <= 84,
+          elevation,
+        };
+      }
+
       function handleMotion(event) {
         if (event.rotationRate?.alpha || event.rotationRate?.beta || event.rotationRate?.gamma) {
           setPermissionStatus("motion", "granted");
@@ -859,8 +1254,19 @@
       function updatePosition(position) {
         state.position = position;
         state.sun = calculateSun(position.coords.latitude, position.coords.longitude, new Date());
+        applyThemeFromSun();
         renderSunReadouts();
         queueRender();
+      }
+
+      function refreshSunState() {
+        if (state.position) {
+          const { latitude, longitude } = state.position.coords;
+          state.sun = calculateSun(latitude, longitude, new Date());
+          renderSunReadouts();
+        }
+
+        applyThemeFromSun();
       }
 
       function dayOfYear(date) {
@@ -930,8 +1336,7 @@
       }
 
       function formatSolarTime(minutes, date = new Date()) {
-        const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        const time = new Date(midnight.getTime() + minutes * 60000);
+        const time = minutesToDate(minutes, date);
         return time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       }
 
@@ -960,45 +1365,61 @@
 
       function renderAR() {
         if (!state.sun || state.sun.error) return;
+        const horizon = updateHorizonGuide();
+
         if (state.heading === null) {
           els.targetStatus.textContent = "Calibrating compass";
           return;
         }
 
         els.headingValue.textContent = `${Math.round(state.heading)}°`;
-        const sunrise = projectTarget("sunrise", state.sun.sunrise, els.sunriseMarker, els.sunrisePip);
-        const sunset = projectTarget("sunset", state.sun.sunset, els.sunsetMarker, els.sunsetPip);
+        const sunrise = projectTarget("sunrise", state.sun.sunrise, els.sunriseMarker, els.sunrisePip, horizon);
+        const sunset = projectTarget("sunset", state.sun.sunset, els.sunsetMarker, els.sunsetPip, horizon);
         const closest = Math.abs(sunrise.diff) <= Math.abs(sunset.diff) ? sunrise : sunset;
         const abs = Math.abs(closest.diff);
         const direction = closest.diff > 0 ? "right" : "left";
 
-        els.reticle.classList.toggle("is-locked", abs < 6);
-        if (abs < 6) {
+        els.reticle.classList.toggle("is-locked", closest.visible && abs < 6);
+
+        if (!horizon.ready) {
+          state.lockedKey = null;
+          els.targetStatus.textContent = `${closest.label} ${Math.round(abs)}° ${direction} · tilt data pending`;
+        } else if (!horizon.visible) {
+          state.lockedKey = null;
+          els.targetStatus.textContent =
+            horizon.elevation > 0 ? "Lower to bring horizon into view" : "Raise to bring horizon into view";
+        } else if (closest.visible && abs < 6) {
           els.targetStatus.textContent = `${closest.label} aligned`;
           pulse(closest.key);
-        } else {
+        } else if (closest.visible) {
           state.lockedKey = null;
           els.targetStatus.textContent = `${closest.label} ${Math.round(abs)}° ${direction}`;
+        } else {
+          state.lockedKey = null;
+          els.targetStatus.textContent = `${closest.label} ${Math.round(abs)}° ${direction} around the horizon`;
         }
       }
 
-      function projectTarget(key, target, marker, pip) {
+      function projectTarget(key, target, marker, pip, horizon) {
         const diff = signedDelta(target.azimuth, state.heading);
         const abs = Math.abs(diff);
-        const x = clamp(50 + (diff / 58) * 50, 8, 92);
-        const y = clamp(44 + (state.orientation.beta / 80) * 14, 28, 70);
-        const pipX = clamp(50 + (diff / 105) * 50, 8, 92);
+        const visible = horizon.visible && abs <= AR_VIEW.visibleHalfFov;
+        const x = clamp(50 + (diff / AR_VIEW.horizontalHalfFov) * 42, 8, 92);
+        const y = clamp(horizon.y - AR_VIEW.horizonMarkerGap, 16, 78);
+        const pipX = clamp(50 + (diff / 180) * 43, 7, 93);
 
         marker.style.setProperty("--x", `${x}%`);
         marker.style.setProperty("--y", `${y}%`);
-        marker.style.setProperty("--scale", abs < 6 ? "1.12" : abs > 72 ? "0.82" : "1");
-        marker.classList.toggle("is-edge", abs > 72);
-        marker.classList.toggle("is-locked", abs < 6);
+        marker.style.setProperty("--scale", visible && abs < 6 ? "1.12" : "1");
+        marker.classList.toggle("is-edge", !visible && abs <= 115);
+        marker.classList.toggle("is-offscreen", !visible);
+        marker.classList.toggle("is-locked", visible && abs < 6);
         pip.style.setProperty("--pip-x", `${pipX}%`);
 
         return {
           key,
           diff,
+          visible,
           label: key === "sunrise" ? "Sunrise" : "Sunset",
         };
       }
@@ -1105,6 +1526,8 @@
       window.addEventListener("orientationchange", queueRender);
 
       readInitialPermissions();
+      applyThemeFromClock();
+      setInterval(refreshSunState, 60000);
       if (window.lucide) window.lucide.createIcons();
 
       if ("serviceWorker" in navigator) {
