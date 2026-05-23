@@ -396,16 +396,24 @@
         max-width: 100%;
         height: auto;
         line-height: 1.05;
-        padding: 0.18rem 0.45rem;
+        padding: 0.16rem 0.36rem;
         border-radius: 999px;
-        font-size: 0.62rem;
+        font-size: 0.56rem;
         font-stretch: 75%;
         font-weight: 800;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.015em;
         text-transform: uppercase;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+
+      @media (max-width: 380px) {
+        .event-soon.is-magic-hour {
+          font-size: 0.5rem;
+          padding: 0.14rem 0.3rem;
+          letter-spacing: 0.01em;
+        }
       }
 
       .event-soon-sunrise.is-magic-hour {
@@ -920,6 +928,20 @@
         #startButton {
           padding-top: 0.85rem;
           padding-bottom: 0.85rem;
+        }
+      }
+
+      @media (max-width: 400px) {
+        #arScreen .ar-tile {
+          padding: 0.5rem;
+        }
+
+        #arScreen .ar-tile > .font-ultra {
+          font-size: 1rem;
+        }
+
+        #arScreen .ar-tile > .font-condensed {
+          font-size: 0.7rem;
         }
       }
 
@@ -1917,14 +1939,16 @@
         }
       }
 
-      async function startSkyMode() {
-        els.startButton.disabled = true;
-        els.startButton.classList.add("opacity-75");
-        setStartupCopy({
-          label: "Opening sky view",
-          summary: "Answer the prompts as they appear.",
-          note: "Requesting camera, GPS, compass, and motion.",
-        });
+      async function startSkyMode({ silent = false } = {}) {
+        if (!silent) {
+          els.startButton.disabled = true;
+          els.startButton.classList.add("opacity-75");
+          setStartupCopy({
+            label: "Opening sky view",
+            summary: "Answer the prompts as they appear.",
+            note: "Requesting camera, GPS, compass, and motion.",
+          });
+        }
 
         const requests = await Promise.allSettled([
           requestOrientation(),
@@ -1951,20 +1975,65 @@
           });
           els.startButton.disabled = false;
           els.startButton.classList.remove("opacity-75");
-          return;
+          return false;
         }
 
-        setStartupCopy({
-          label: "Calibrating",
-          summary: "Holding the compass still for a steadier first view.",
-          note: "Opening the horizon now.",
-        });
+        if (!silent) {
+          setStartupCopy({
+            label: "Calibrating",
+            summary: "Holding the compass still for a steadier first view.",
+            note: "Opening the horizon now.",
+          });
+        }
         await settleSensors();
+
+        try {
+          localStorage.setItem("sunar:setup-complete", "1");
+        } catch {}
 
         els.permissionScreen.classList.add("hidden");
         els.arScreen.classList.remove("hidden");
         renderSunReadouts();
         queueRender();
+        return true;
+      }
+
+      async function autoStartIfPossible() {
+        let stored = null;
+        try {
+          stored = localStorage.getItem("sunar:setup-complete");
+        } catch {}
+        if (stored !== "1") return false;
+
+        // iOS requires a user gesture for DeviceOrientationEvent.requestPermission.
+        if (
+          typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function"
+        ) {
+          return false;
+        }
+
+        if (!navigator.permissions?.query) return false;
+
+        let camera = null;
+        let geolocation = null;
+        try {
+          [camera, geolocation] = await Promise.all([
+            navigator.permissions.query({ name: "camera" }).catch(() => null),
+            navigator.permissions.query({ name: "geolocation" }).catch(() => null),
+          ]);
+        } catch {
+          return false;
+        }
+
+        if (camera?.state !== "granted" || geolocation?.state !== "granted") return false;
+
+        els.permissionScreen.classList.add("hidden");
+        const success = await startSkyMode({ silent: true });
+        if (!success) {
+          els.permissionScreen.classList.remove("hidden");
+        }
+        return success;
       }
 
       function toggleHaptics() {
@@ -2006,7 +2075,7 @@
         els.installButton.classList.remove("flex");
       });
 
-      els.startButton.addEventListener("click", startSkyMode);
+      els.startButton.addEventListener("click", () => startSkyMode());
       els.refreshButton.addEventListener("click", refreshLocation);
       els.hapticButton.addEventListener("click", toggleHaptics);
       els.installButton.addEventListener("click", promptInstall);
@@ -2016,6 +2085,7 @@
       applyThemeFromClock();
       setInterval(refreshSunState, 60000);
       if (window.lucide) window.lucide.createIcons();
+      autoStartIfPossible();
 
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
