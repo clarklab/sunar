@@ -1,4 +1,4 @@
-const CACHE_NAME = "sunar-app-v10";
+const CACHE_NAME = "sunar-app-v11";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -12,7 +12,16 @@ const APP_SHELL = [
   "./sunar-icon-512.webp",
   "./sunar-maskable-192.webp",
   "./sunar-maskable-512.webp",
-  "./apple-touch-icon.png"
+  "./apple-touch-icon.png",
+  "./vendor/tailwind.js",
+  "./vendor/lucide.js",
+  "./vendor/fonts/mona-sans.css",
+  "./vendor/fonts/mona-latin.woff2",
+  "./vendor/fonts/mona-latin-ext.woff2",
+  "./vendor/fonts/mona-vietnamese.woff2",
+  "./vendor/fonts/mona-latin-italic.woff2",
+  "./vendor/fonts/mona-latin-ext-italic.woff2",
+  "./vendor/fonts/mona-vietnamese-italic.woff2"
 ];
 
 self.addEventListener("install", (event) => {
