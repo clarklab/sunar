@@ -472,20 +472,18 @@
       }
 
       .horizon-guide {
-        --horizon-y: 48%;
         position: fixed;
         left: 0;
         right: 0;
-        top: var(--horizon-y);
+        top: 0;
         z-index: 8;
         height: 0;
-        transform: translateY(-50%);
+        transform: translate3d(0, 48dvh, 0);
+        will-change: transform;
         color: var(--horizon-line);
         filter: drop-shadow(0 0 18px rgba(255, 184, 77, 0.26));
         pointer-events: none;
-        transition:
-          top 60ms linear,
-          color 700ms ease;
+        transition: color 700ms ease;
       }
 
       .horizon-guide::before {
@@ -530,22 +528,15 @@
       }
 
       .target-marker {
-        --x: 50%;
-        --y: 46%;
-        --scale: 1;
         position: absolute;
-        left: var(--x);
-        top: var(--y);
-        transform: translate(-50%, -50%) scale(var(--scale));
+        left: 0;
+        top: 0;
+        transform: translate3d(50vw, -50vh, 0) translate(-50%, -50%);
         transform-origin: center;
         min-width: 9rem;
         opacity: 0.96;
-        transition:
-          left 50ms linear,
-          top 60ms linear,
-          opacity 180ms ease,
-          transform 180ms ease;
-        will-change: transform, left, top;
+        transition: opacity 180ms ease;
+        will-change: transform, opacity;
       }
 
       .target-marker.is-edge {
@@ -554,7 +545,6 @@
 
       .target-marker.is-offscreen {
         opacity: 0;
-        transform: translate(-50%, -50%) scale(0.62);
       }
 
       .target-rays {
@@ -601,6 +591,15 @@
         place-items: center;
         border-radius: 999px;
         filter: drop-shadow(0 24px 46px rgba(0, 0, 0, 0.34));
+        transition: transform 220ms ease;
+      }
+
+      .target-marker.is-offscreen .target-dot {
+        transform: scale(0.62);
+      }
+
+      .target-marker.is-locked .target-dot {
+        transform: scale(1.1);
       }
 
       .target-dot::before,
@@ -752,13 +751,13 @@
       }
 
       .bearing-pip {
-        --pip-x: 50%;
         position: absolute;
-        left: var(--pip-x);
+        left: 0;
         top: 50%;
         width: 3rem;
         height: 3rem;
         transform: translate(-50%, -50%);
+        will-change: transform;
         border-radius: 999px;
         display: grid;
         place-items: center;
@@ -770,9 +769,7 @@
           "wdth" 125,
           "wght" 760;
         box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
-        transition:
-          left 50ms linear,
-          opacity 220ms ease;
+        transition: opacity 220ms ease;
         z-index: 2;
       }
 
@@ -787,11 +784,11 @@
       }
 
       .bearing-cardinal {
-        --pip-x: 50%;
         position: absolute;
-        left: var(--pip-x);
+        left: 0;
         top: 50%;
         transform: translate(-50%, -50%);
+        will-change: transform;
         display: grid;
         place-items: center;
         width: 1.5rem;
@@ -807,7 +804,6 @@
         opacity: 0.55;
         background: transparent;
         transition:
-          left 50ms linear,
           opacity 220ms ease,
           color 700ms ease;
         z-index: 1;
@@ -1030,7 +1026,7 @@
                   <div class="min-w-0">
                     <div class="permission-name text-lg font-semibold text-[#2a1518] sm:text-base">One tap setup</div>
                     <p id="permissionSummary" class="permission-summary-copy mt-1 text-base/6 font-medium text-pretty text-[#7c2d12] sm:text-sm/6" aria-live="polite">
-                      Camera, GPS, compass, and motion start together.
+                      Compass, camera, and GPS — one quick prompt each.
                     </p>
                   </div>
                 </div>
@@ -1149,14 +1145,14 @@
               <div
                 id="sunrisePip"
                 class="bearing-pip"
-                style="--pip-x: 35%; background: linear-gradient(135deg, #fde68a, #f97316);"
+                style="background: linear-gradient(135deg, #fde68a, #f97316);"
               >
                 rise
               </div>
               <div
                 id="sunsetPip"
                 class="bearing-pip"
-                style="--pip-x: 65%; background: linear-gradient(135deg, #fda4af, #db2777);"
+                style="background: linear-gradient(135deg, #fda4af, #db2777);"
               >
                 set
               </div>
@@ -1214,6 +1210,13 @@
           gamma: null,
           elevation: null,
         },
+        motion: {
+          rotationSpeed: 0,
+          updatedAt: 0,
+          granted: false,
+        },
+        compassAccuracy: null,
+        compassBlocked: false,
         horizonY: null,
         targets: {
           sunrise: { x: null, y: null, pipX: null, visible: false, pipBehind: false },
@@ -1224,9 +1227,18 @@
         haptics: true,
         lastVibrateAt: 0,
         lockedKey: null,
-        renderQueued: false,
+        alignedKey: null,
         cardinal: null,
+        displayHeading: null,
+        lastStatusText: "",
+        starting: false,
+        loopRunning: false,
+        lastFrameAt: null,
       };
+
+      const IS_IOS =
+        /iP(hone|od|ad)/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
       const els = {
         permissionScreen: document.getElementById("permissionScreen"),
@@ -1254,6 +1266,7 @@
         sunrisePip: document.getElementById("sunrisePip"),
         sunsetPip: document.getElementById("sunsetPip"),
         bearingCardinals: document.querySelectorAll(".bearing-cardinal"),
+        bearingRail: document.querySelector(".bearing-rail"),
         installButton: document.getElementById("installButton"),
         locationReadout: document.getElementById("locationReadout"),
         reticle: document.getElementById("reticle"),
@@ -1261,6 +1274,18 @@
       };
 
       let installPrompt = null;
+
+      const layout = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        railWidth: 0,
+      };
+
+      function measureLayout() {
+        layout.width = window.innerWidth;
+        layout.height = window.innerHeight;
+        layout.railWidth = els.bearingRail?.clientWidth || 0;
+      }
 
       const AR_VIEW = {
         horizonCenterY: 48,
@@ -1350,41 +1375,63 @@
         applySkyTheme(date >= sunrise && date < sunset ? "day" : "night");
       }
 
-      function smoothingAmount(delta, minAmount, maxAmount, fullSpeedAt) {
-        return minAmount + (maxAmount - minAmount) * clamp(Math.abs(delta) / fullSpeedAt, 0, 1);
+      // One Euro filter (Casiez et al.): time-based low-pass whose cutoff rises
+      // with signal speed — steady when still, immediate when the phone swings.
+      // Runs once per sensor sample, so iOS at 60Hz and Android at 15Hz behave
+      // the same; a per-frame chase stage below interpolates between samples.
+      function lowpassAlpha(dt, cutoff) {
+        const tau = 1 / (2 * Math.PI * cutoff);
+        return 1 / (1 + tau / dt);
       }
 
-      function smoothValue(current, next, options = {}) {
-        const {
-          minAmount = 0.08,
-          maxAmount = 0.28,
-          fullSpeedAt = 24,
-          deadband = 0.12,
-        } = options;
+      function createOneEuroFilter({ minCutoff, beta, dCutoff, angular = false }) {
+        let value = null;
+        let speed = 0;
+        let lastSampleAt = null;
 
-        if (typeof next !== "number" || Number.isNaN(next)) return current;
-        if (current === null || Number.isNaN(current)) return next;
+        return {
+          get value() {
+            return value;
+          },
+          reset() {
+            value = null;
+            speed = 0;
+            lastSampleAt = null;
+          },
+          // gyroSpeed (deg/s) caps the speed estimate: the gyroscope knows how
+          // fast the phone is really turning, so compass noise can't masquerade
+          // as motion and punch through the filter while the device is still.
+          sample(raw, now, gyroSpeed = null) {
+            if (typeof raw !== "number" || Number.isNaN(raw)) return value;
 
-        const delta = next - current;
-        if (Math.abs(delta) < deadband) return current;
+            if (value === null || lastSampleAt === null || now - lastSampleAt > 1500) {
+              value = angular ? normalizeDegrees(raw) : raw;
+              speed = 0;
+              lastSampleAt = now;
+              return value;
+            }
 
-        return current + delta * smoothingAmount(delta, minAmount, maxAmount, fullSpeedAt);
+            const dt = clamp((now - lastSampleAt) / 1000, 1 / 120, 0.5);
+            lastSampleAt = now;
+
+            const delta = angular ? signedDelta(raw, value) : raw - value;
+            speed += (delta / dt - speed) * lowpassAlpha(dt, dCutoff);
+            let motion = Math.abs(speed);
+            if (typeof gyroSpeed === "number") motion = Math.min(motion, gyroSpeed);
+            // Persistent large offsets (compass calibration corrections) should
+            // converge fast even when the gyro reports the phone as still.
+            const error = Math.abs(delta);
+            const errorBoost = error > 20 ? (error - 20) * 0.12 : 0;
+            const cutoff = minCutoff + beta * motion + errorBoost;
+            const blended = value + delta * lowpassAlpha(dt, cutoff);
+            value = angular ? normalizeDegrees(blended) : blended;
+            return value;
+          },
+        };
       }
 
-      function smoothAngle(current, next, options = {}) {
-        const {
-          minAmount = 0.35,
-          maxAmount = 0.85,
-          fullSpeedAt = 18,
-          deadband = 0.5,
-        } = options;
-
-        if (current === null || Number.isNaN(current)) return normalizeDegrees(next);
-        const delta = signedDelta(next, current);
-        if (Math.abs(delta) < deadband) return current;
-
-        return normalizeDegrees(current + delta * smoothingAmount(delta, minAmount, maxAmount, fullSpeedAt));
-      }
+      const headingFilter = createOneEuroFilter({ minCutoff: 0.3, beta: 0.05, dCutoff: 1.0, angular: true });
+      const elevationFilter = createOneEuroFilter({ minCutoff: 0.6, beta: 0.04, dCutoff: 1.0 });
 
       function sleep(ms) {
         return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -1416,6 +1463,35 @@
         checkPassiveCapabilities();
       }
 
+      function describeCameraError(error) {
+        switch (error?.name) {
+          case "NotAllowedError":
+          case "SecurityError":
+            return IS_IOS
+              ? "Camera is blocked for this site — allow it in Safari's website settings, then reload."
+              : "Camera is blocked — open your browser's site settings, allow camera, then reload.";
+          case "NotFoundError":
+          case "OverconstrainedError":
+            return "No usable camera was found on this device.";
+          case "NotReadableError":
+          case "AbortError":
+            return "The camera is busy in another app — close it and try again.";
+          default:
+            return "Camera could not start. Check permissions and try again.";
+        }
+      }
+
+      function describeLocationError(error) {
+        if (error?.code === 1) {
+          return IS_IOS
+            ? "Location is blocked — allow it in Safari's website settings, then reload."
+            : "Location is blocked — open your browser's site settings, allow location, then reload.";
+        }
+        if (error?.code === 2) return "GPS signal unavailable — move toward open sky and try again.";
+        if (error?.code === 3) return "GPS timed out — tap Refresh GPS to try again.";
+        return "Location could not start. Check permissions and try again.";
+      }
+
       async function requestCamera() {
         setPermissionStatus("camera", "requesting");
         if (!navigator.mediaDevices?.getUserMedia) {
@@ -1438,8 +1514,8 @@
           await els.cameraFeed.play();
           setPermissionStatus("camera", "granted");
         } catch (error) {
-          setPermissionStatus("camera", "denied");
-          throw error;
+          setPermissionStatus("camera", error?.name === "NotFoundError" ? "limited" : "denied");
+          throw new Error(describeCameraError(error));
         }
       }
 
@@ -1470,8 +1546,8 @@
             timeout: 20000,
           });
         } catch (error) {
-          setPermissionStatus("location", "denied");
-          throw error;
+          setPermissionStatus("location", error?.code === 1 ? "denied" : "limited");
+          throw new Error(describeLocationError(error));
         }
       }
 
@@ -1484,19 +1560,20 @@
 
         try {
           if (typeof DeviceOrientationEvent.requestPermission === "function") {
-            const result = await DeviceOrientationEvent.requestPermission(true);
+            const result = await DeviceOrientationEvent.requestPermission();
             if (result !== "granted") {
-              setPermissionStatus("compass", "denied");
               throw new Error("Compass permission was not granted.");
             }
           }
 
+          state.compassBlocked = false;
           window.addEventListener("deviceorientation", handleOrientation, true);
           window.addEventListener("deviceorientationabsolute", handleOrientation, true);
           setPermissionStatus("compass", "granted");
         } catch (error) {
+          state.compassBlocked = true;
           setPermissionStatus("compass", "denied");
-          throw error;
+          throw new Error("Motion & compass access was declined — reload the page to be asked again.");
         }
       }
 
@@ -1511,7 +1588,6 @@
           if (typeof DeviceMotionEvent.requestPermission === "function") {
             const result = await DeviceMotionEvent.requestPermission();
             if (result !== "granted") {
-              setPermissionStatus("motion", "denied");
               throw new Error("Gyro permission was not granted.");
             }
           }
@@ -1543,64 +1619,98 @@
         }
       }
 
+      function getScreenAngle() {
+        const angle = screen.orientation?.angle ?? window.orientation ?? 0;
+        return typeof angle === "number" && Number.isFinite(angle) ? normalizeDegrees(angle) : 0;
+      }
+
+      function getGyroSpeed(now) {
+        return now - state.motion.updatedAt < 250 ? state.motion.rotationSpeed : null;
+      }
+
       function handleOrientation(event) {
+        const now = performance.now();
         let nextHeading = null;
 
-        if (typeof event.webkitCompassHeading === "number") {
-          nextHeading = event.webkitCompassHeading;
+        if (typeof event.webkitCompassHeading === "number" && event.webkitCompassHeading >= 0) {
+          nextHeading = event.webkitCompassHeading + getScreenAngle();
           state.headingSource = "true compass";
+          if (typeof event.webkitCompassAccuracy === "number") {
+            state.compassAccuracy = event.webkitCompassAccuracy;
+          }
         } else if (typeof event.alpha === "number") {
           const isAbsolute = event.absolute === true;
           if (isAbsolute) {
-            nextHeading = normalizeDegrees(360 - event.alpha);
+            nextHeading = 360 - event.alpha + getScreenAngle();
             state.headingSource = "absolute compass";
           } else if (state.headingSource !== "absolute compass" && state.headingSource !== "true compass") {
-            nextHeading = normalizeDegrees(360 - event.alpha);
+            nextHeading = 360 - event.alpha + getScreenAngle();
             state.headingSource = "relative compass";
           }
         }
 
-        if (nextHeading !== null) state.rawHeading = normalizeDegrees(nextHeading);
+        if (nextHeading !== null) {
+          state.rawHeading = normalizeDegrees(nextHeading);
+          headingFilter.sample(state.rawHeading, now, getGyroSpeed(now));
+        }
 
         if (typeof event.beta === "number") state.orientation.beta = event.beta;
         if (typeof event.gamma === "number") state.orientation.gamma = event.gamma;
-        queueRender();
-      }
 
-      function smoothSensorState() {
-        if (state.rawHeading !== null) {
-          state.heading = smoothAngle(state.heading, state.rawHeading);
+        const rawElevation = getCameraElevation();
+        if (rawElevation !== null) {
+          elevationFilter.sample(rawElevation, now, getGyroSpeed(now));
         }
       }
 
       function getCameraElevation() {
-        if (typeof state.orientation.beta !== "number") return null;
+        const { beta, gamma } = state.orientation;
+        if (typeof beta !== "number") return null;
 
-        const screenAngle =
-          screen.orientation?.angle ??
-          window.orientation ??
-          0;
+        const screenAngle = getScreenAngle();
 
-        if (Math.abs(screenAngle) === 90 && typeof state.orientation.gamma === "number") {
-          return clamp(-state.orientation.gamma, -80, 80);
+        if ((screenAngle === 90 || screenAngle === 270) && typeof gamma === "number") {
+          return clamp(-gamma, -80, 80);
         }
 
-        if (Math.abs(screenAngle) === 180) {
-          return clamp(90 - state.orientation.beta, -80, 80);
+        if (screenAngle === 180) {
+          return clamp(90 - beta, -80, 80);
         }
 
-        return clamp(state.orientation.beta - 90, -80, 80);
+        return clamp(beta - 90, -80, 80);
+      }
+
+      // Per-frame chase stage: ease the rendered values toward the filtered
+      // sensor targets so slow sensor rates (10-20Hz on many Android devices)
+      // still produce continuous 60fps motion instead of visible steps.
+      const CHASE_TAU = 0.09;
+
+      function updateFilters(now) {
+        const last = state.lastFrameAt;
+        state.lastFrameAt = now;
+        if (last === null) return;
+
+        const dt = clamp((now - last) / 1000, 1 / 240, 0.1);
+        const ease = 1 - Math.exp(-dt / CHASE_TAU);
+
+        const headingTarget = headingFilter.value;
+        if (headingTarget !== null) {
+          state.heading =
+            state.heading === null
+              ? headingTarget
+              : normalizeDegrees(state.heading + signedDelta(headingTarget, state.heading) * ease);
+        }
+
+        const elevationTarget = elevationFilter.value;
+        if (elevationTarget !== null) {
+          state.orientation.elevation =
+            state.orientation.elevation === null
+              ? elevationTarget
+              : state.orientation.elevation + (elevationTarget - state.orientation.elevation) * ease;
+        }
       }
 
       function updateHorizonGuide() {
-        const rawElevation = getCameraElevation();
-        state.orientation.elevation = smoothValue(state.orientation.elevation, rawElevation, {
-          minAmount: 0.32,
-          maxAmount: 0.7,
-          fullSpeedAt: 14,
-          deadband: 0.25,
-        });
-
         const elevation = state.orientation.elevation;
         const horizonY =
           elevation === null
@@ -1612,9 +1722,8 @@
               );
         state.horizonY = horizonY;
 
-        const horizonValue = `${horizonY}%`;
-        els.horizonMask.style.setProperty("--horizon-y", horizonValue);
-        els.horizonGuide.style.setProperty("--horizon-y", horizonValue);
+        els.horizonMask.style.setProperty("--horizon-y", `${horizonY}%`);
+        els.horizonGuide.style.transform = `translate3d(0, ${(horizonY / 100) * layout.height}px, 0)`;
 
         return {
           y: horizonY,
@@ -1625,9 +1734,17 @@
       }
 
       function handleMotion(event) {
-        if (event.rotationRate?.alpha || event.rotationRate?.beta || event.rotationRate?.gamma) {
+        const rate = event.rotationRate;
+        if (!rate) return;
+
+        const speed = Math.hypot(rate.alpha || 0, rate.beta || 0, rate.gamma || 0);
+        if (!state.motion.granted && speed > 0) {
+          state.motion.granted = true;
           setPermissionStatus("motion", "granted");
         }
+
+        state.motion.rotationSpeed = speed;
+        state.motion.updatedAt = performance.now();
       }
 
       function updatePosition(position) {
@@ -1635,7 +1752,6 @@
         state.sun = calculateSun(position.coords.latitude, position.coords.longitude, new Date());
         applyThemeFromSun();
         renderSunReadouts();
-        queueRender();
       }
 
       function refreshSunState() {
@@ -1787,53 +1903,86 @@
         els.locationReadout.textContent = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} · ±${Math.round(accuracy)}m`;
       }
 
-      function queueRender() {
-        if (state.renderQueued) return;
-        state.renderQueued = true;
-        requestAnimationFrame(() => {
-          state.renderQueued = false;
-          renderAR();
-        });
+      function startRenderLoop() {
+        if (state.loopRunning) return;
+        state.loopRunning = true;
+        state.lastFrameAt = null;
+
+        const frame = (now) => {
+          if (!state.loopRunning) return;
+          updateFilters(now);
+          renderFrame();
+          requestAnimationFrame(frame);
+        };
+
+        requestAnimationFrame(frame);
       }
 
-      function renderAR() {
+      function setTargetStatus(text) {
+        if (state.lastStatusText === text) return;
+        state.lastStatusText = text;
+        els.targetStatus.textContent = text;
+      }
+
+      function renderFrame() {
         if (!state.sun || state.sun.error) return;
-        smoothSensorState();
         const horizon = updateHorizonGuide();
 
         if (state.heading === null) {
-          els.targetStatus.textContent = "Calibrating compass";
+          if (state.compassBlocked) {
+            setTargetStatus(
+              IS_IOS
+                ? "Motion access is off — reload the page and tap Allow to enable the compass."
+                : "Compass unavailable — check motion sensor permissions for this site."
+            );
+          } else {
+            setTargetStatus("Calibrating compass");
+          }
           return;
         }
 
-        els.headingValue.textContent = `${Math.round(state.heading)}°`;
+        const rounded = Math.round(state.heading) % 360;
+        if (rounded !== state.displayHeading) {
+          state.displayHeading = rounded;
+          els.headingValue.textContent = `${rounded}°`;
+        }
+
         state.cardinal = cardinalFromBearing(state.heading, state.cardinal);
-        els.headingCardinal.textContent = `facing ${state.cardinal}`;
+        const cardinalText = `facing ${state.cardinal}`;
+        if (els.headingCardinal.textContent !== cardinalText) {
+          els.headingCardinal.textContent = cardinalText;
+        }
+
         updateCardinalTicks(state.heading);
         const sunrise = projectTarget("sunrise", state.sun.sunrise, els.sunriseMarker, els.sunrisePip, horizon);
         const sunset = projectTarget("sunset", state.sun.sunset, els.sunsetMarker, els.sunsetPip, horizon);
         const closest = Math.abs(sunrise.diff) <= Math.abs(sunset.diff) ? sunrise : sunset;
         const abs = Math.abs(closest.diff);
         const direction = closest.diff > 0 ? "right" : "left";
+        const locked = closest.aligned;
+        state.alignedKey = locked ? closest.key : null;
+        if (!locked) state.lockedKey = null;
 
-        els.reticle.classList.toggle("is-locked", closest.visible && abs < 6);
+        els.reticle.classList.toggle("is-locked", locked);
+
+        const poorCompass =
+          state.compassAccuracy !== null && (state.compassAccuracy < 0 || state.compassAccuracy > 35);
 
         if (!horizon.ready) {
-          state.lockedKey = null;
-          els.targetStatus.textContent = `${closest.label} ${Math.round(abs)}° ${direction} · tilt data pending`;
+          setTargetStatus(`${closest.label} ${Math.round(abs)}° ${direction} · tilt data pending`);
         } else if (!horizon.visible) {
-          state.lockedKey = null;
-          els.targetStatus.textContent =
-            horizon.elevation > 0 ? "Lower to bring horizon into view" : "Raise to bring horizon into view";
-        } else if (closest.visible && abs < 6) {
-          els.targetStatus.textContent = `${closest.label} aligned`;
+          setTargetStatus(
+            horizon.elevation > 0 ? "Lower to bring horizon into view" : "Raise to bring horizon into view"
+          );
+        } else if (locked) {
+          setTargetStatus(`${closest.label} aligned`);
           pulse(closest.key);
+        } else if (poorCompass) {
+          setTargetStatus("Calibrating compass — wave your phone in a figure-8");
         } else if (closest.visible) {
-          state.lockedKey = null;
-          els.targetStatus.textContent = `${closest.label} ${Math.round(abs)}° ${direction}`;
+          setTargetStatus(`${closest.label} ${Math.round(abs)}° ${direction}`);
         } else {
-          state.lockedKey = null;
-          els.targetStatus.textContent = `${closest.label} ${Math.round(abs)}° ${direction} around the horizon`;
+          setTargetStatus(`${closest.label} ${Math.round(abs)}° ${direction} around the horizon`);
         }
       }
 
@@ -1849,6 +1998,9 @@
         const pipX = pipBehind
           ? (diff > 0 ? 93 : 7)
           : clamp(50 + (diff / 180) * 43, 7, 93);
+        // Hysteresis: lock at 5.5° but hold until 8° so the reticle and
+        // haptics don't flicker while hovering at the boundary.
+        const aligned = visible && abs < (state.alignedKey === key ? 8 : 5.5);
 
         targetState.x = x;
         targetState.y = y;
@@ -1856,24 +2008,27 @@
         targetState.pipBehind = pipBehind;
         targetState.visible = visible;
 
-        marker.style.setProperty("--x", `${x}%`);
-        marker.style.setProperty("--y", `${y}%`);
-        marker.style.setProperty("--scale", visible && abs < 6 ? "1.12" : "1");
+        marker.style.transform =
+          `translate3d(${(x / 100) * layout.width}px, ${(y / 100) * layout.height}px, 0) translate(-50%, -50%)`;
         marker.classList.toggle("is-edge", !visible && abs <= 115);
         marker.classList.toggle("is-offscreen", !visible);
-        marker.classList.toggle("is-locked", visible && abs < 6);
+        marker.classList.toggle("is-locked", aligned);
         pip.classList.toggle("is-behind", pipBehind);
-        pip.style.setProperty("--pip-x", `${pipX}%`);
+        if (layout.railWidth > 0) {
+          pip.style.transform = `translate3d(${(pipX / 100) * layout.railWidth}px, 0, 0) translate(-50%, -50%)`;
+        }
 
         return {
           key,
           diff,
           visible,
+          aligned,
           label: key === "sunrise" ? "Sunrise" : "Sunset",
         };
       }
 
       function updateCardinalTicks(heading) {
+        if (layout.railWidth <= 0) return;
         els.bearingCardinals.forEach((node) => {
           const card = CARDINAL_BEARINGS.find((c) => c.key === node.dataset.cardinal);
           if (!card) return;
@@ -1883,7 +2038,7 @@
           const x = behind
             ? (diff > 0 ? 96 : 4)
             : clamp(50 + (diff / 180) * 47, 4, 96);
-          node.style.setProperty("--pip-x", `${x}%`);
+          node.style.transform = `translate3d(${(x / 100) * layout.railWidth}px, 0, 0) translate(-50%, -50%)`;
           node.style.opacity = behind
             ? "0"
             : (card.key === "N" ? "0.85" : "0.55");
@@ -1912,74 +2067,70 @@
 
       async function settleSensors() {
         const startedAt = performance.now();
-        const minSettleMs = 900;
-        const maxSettleMs = 1800;
+        const minSettleMs = 850;
+        const maxSettleMs = 2400;
 
+        // The render loop is already advancing the filters; just wait for the
+        // compass and tilt to produce settled values before revealing AR.
         while (performance.now() - startedAt < maxSettleMs) {
-          smoothSensorState();
-          updateHorizonGuide();
-
-          const hasMinimumTime = performance.now() - startedAt >= minSettleMs;
+          const elapsed = performance.now() - startedAt;
           const hasCompass = state.heading !== null;
           const hasTilt = state.orientation.elevation !== null;
-          if (hasMinimumTime && hasCompass && hasTilt) break;
-
-          await sleep(70);
-        }
-
-        for (let frame = 0; frame < 8; frame += 1) {
-          smoothSensorState();
-          updateHorizonGuide();
-          await sleep(32);
+          if (elapsed >= minSettleMs && hasCompass && hasTilt) break;
+          await sleep(80);
         }
       }
 
       async function startSkyMode({ silent = false } = {}) {
+        if (state.starting) return false;
+        state.starting = true;
+
         if (!silent) {
           els.startButton.disabled = true;
           els.startButton.classList.add("opacity-75");
           setStartupCopy({
-            label: "Opening sky view",
-            summary: "Answer the prompts as they appear.",
-            note: "Requesting camera, GPS, compass, and motion.",
+            label: "Setting up",
+            summary: "Allow each prompt as it appears.",
+            note: "Compass and motion first, then camera, then GPS.",
           });
         }
 
-        const requests = await Promise.allSettled([
-          requestOrientation(),
-          requestMotion(),
-          requestCamera(),
-          requestLocation(),
-          requestWakeLock(),
-        ]);
+        // Motion + orientation must be requested inside the tap gesture (iOS),
+        // so they start first and together. Camera and GPS then prompt one at
+        // a time instead of stacking dialogs on first use.
+        await Promise.allSettled([requestOrientation(), requestMotion()]);
+        const [cameraResult] = await Promise.allSettled([requestCamera()]);
+        const [locationResult] = await Promise.allSettled([requestLocation()]);
+        await requestWakeLock();
 
-        const failures = requests.filter((request) => request.status === "rejected");
         const hasCamera = Boolean(state.stream);
         const hasLocation = Boolean(state.position);
 
         if (!hasCamera || !hasLocation) {
-          failures.forEach((failure) => {
-            const message = failure.reason?.message || "Permission request failed.";
-            if (/camera/i.test(message)) setPermissionStatus("camera", "denied");
-            if (/geo|location|gps/i.test(message)) setPermissionStatus("location", "denied");
-          });
+          const blocker =
+            (cameraResult.status === "rejected" && cameraResult.reason?.message) ||
+            (locationResult.status === "rejected" && locationResult.reason?.message) ||
+            "Camera and GPS are required for sky mode.";
           setStartupCopy({
-            label: "Start sky view",
+            label: "Try again",
             summary: "Camera and GPS are required for AR sky mode.",
-            note: failures[0]?.reason?.message || "Camera and GPS are required for sky mode.",
+            note: blocker,
           });
           els.startButton.disabled = false;
           els.startButton.classList.remove("opacity-75");
+          state.starting = false;
           return false;
         }
 
         if (!silent) {
           setStartupCopy({
             label: "Calibrating",
-            summary: "Holding the compass still for a steadier first view.",
+            summary: "Hold steady for a moment while the compass settles.",
             note: "Opening the horizon now.",
           });
         }
+
+        startRenderLoop();
         await settleSensors();
 
         try {
@@ -1988,8 +2139,9 @@
 
         els.permissionScreen.classList.add("hidden");
         els.arScreen.classList.remove("hidden");
+        measureLayout();
         renderSunReadouts();
-        queueRender();
+        state.starting = false;
         return true;
       }
 
@@ -2051,8 +2203,11 @@
       }
 
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible" && !state.wakeLock) {
-          requestWakeLock();
+        if (document.visibilityState === "visible") {
+          // Restart filter timing so the pause doesn't register as one giant
+          // frame delta when the tab comes back.
+          state.lastFrameAt = null;
+          if (!state.wakeLock) requestWakeLock();
         }
       });
 
@@ -2074,7 +2229,8 @@
       els.refreshButton.addEventListener("click", refreshLocation);
       els.hapticButton.addEventListener("click", toggleHaptics);
       els.installButton.addEventListener("click", promptInstall);
-      window.addEventListener("orientationchange", queueRender);
+      window.addEventListener("resize", measureLayout);
+      window.addEventListener("orientationchange", () => window.setTimeout(measureLayout, 250));
 
       readInitialPermissions();
       applyThemeFromClock();
