@@ -164,9 +164,24 @@
         background: var(--permission-bg);
         color: var(--permission-text);
         overflow-x: hidden;
+        /* Own padding (not utility classes) so notched phones with
+           viewport-fit=cover never tuck content under the hardware. */
+        padding-top: max(1.25rem, env(safe-area-inset-top));
+        padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+        padding-left: max(1.25rem, env(safe-area-inset-left));
+        padding-right: max(1.25rem, env(safe-area-inset-right));
         transition:
           background 700ms ease,
           color 700ms ease;
+      }
+
+      @media (min-width: 640px) {
+        .permission-shell {
+          padding-top: max(1.5rem, env(safe-area-inset-top));
+          padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+          padding-left: max(2rem, env(safe-area-inset-left));
+          padding-right: max(2rem, env(safe-area-inset-right));
+        }
       }
 
       .permission-layout,
@@ -880,8 +895,8 @@
 
       @media (max-height: 740px) {
         .permission-shell {
-          padding-top: 0.75rem;
-          padding-bottom: 0.75rem;
+          padding-top: max(0.75rem, env(safe-area-inset-top));
+          padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
         }
 
         .permission-layout {
@@ -920,6 +935,141 @@
           padding-top: 0.85rem;
           padding-bottom: 0.85rem;
         }
+      }
+
+      /* Very short screens (SE-class phones, 568px tall): tuck everything in
+         so the setup screen never needs to scroll. */
+      @media (max-height: 620px) {
+        #permissionScreen .permission-layout {
+          gap: 0.75rem;
+          min-height: calc(100dvh - 1.5rem);
+        }
+
+        #permissionScreen .permission-layout > div:first-child {
+          padding-top: 0.25rem;
+        }
+
+        #permissionScreen .permission-title {
+          font-size: 2.4rem;
+          margin-top: 0.4rem;
+        }
+
+        #permissionScreen .permission-eyebrow {
+          font-size: 0.8rem;
+        }
+
+        #permissionScreen .brand-wordmark,
+        #permissionScreen .app-chip {
+          font-size: 0.8rem;
+        }
+
+        #permissionNote {
+          min-height: 0;
+        }
+
+        #startButton {
+          padding-top: 0.75rem;
+          padding-bottom: 0.75rem;
+          font-size: 0.95rem;
+        }
+      }
+
+      .rotate-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: none;
+        place-items: center;
+        padding: 1.5rem;
+        text-align: center;
+        background: var(--permission-bg);
+        color: var(--permission-text);
+      }
+
+      .rotate-overlay .rotate-card {
+        display: grid;
+        justify-items: center;
+        gap: 0.9rem;
+        max-width: 26rem;
+      }
+
+      .rotate-overlay p {
+        font-size: 1.05rem;
+        line-height: 1.5;
+        font-weight: 600;
+        color: var(--permission-muted);
+      }
+
+      /* Phones and tablets held sideways: the AR framing assumes portrait. */
+      @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+        .rotate-overlay {
+          display: grid;
+        }
+      }
+
+      .desktop-layout {
+        min-height: calc(100dvh - 3rem);
+      }
+
+      .desktop-qr-card {
+        display: grid;
+        justify-items: center;
+        gap: 0.9rem;
+        border-radius: 2rem;
+        background: #fffdfa;
+        color: #2a1518;
+        padding: 1.9rem;
+        box-shadow:
+          0 30px 80px rgba(19, 15, 19, 0.28),
+          0 0 0 1px rgba(42, 21, 24, 0.06);
+      }
+
+      .desktop-qr-frame {
+        width: min(15rem, 58vw);
+        aspect-ratio: 1;
+      }
+
+      .desktop-qr-frame svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .desktop-qr-caption {
+        font-size: 0.95rem;
+        font-weight: 640;
+        color: rgba(42, 21, 24, 0.72);
+      }
+
+      .desktop-qr-url {
+        font-size: 0.85rem;
+        letter-spacing: 0.04em;
+        color: rgba(42, 21, 24, 0.55);
+      }
+
+      .desktop-feature {
+        border: 1px solid var(--permission-border);
+        background: var(--permission-row);
+        color: var(--permission-text);
+        border-radius: 999px;
+        padding: 0.5rem 0.95rem;
+        font-size: 0.9rem;
+        font-weight: 640;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .desktop-feature i,
+      .desktop-feature svg {
+        color: var(--permission-accent);
+      }
+
+      #desktopContinue {
+        color: var(--permission-accent);
+        font-weight: 680;
+        text-decoration: underline;
+        text-underline-offset: 3px;
       }
 
       @media (max-width: 400px) {
@@ -995,7 +1145,7 @@
       })();
     </script>
     <main id="app" class="isolate min-h-dvh overflow-hidden">
-      <section id="permissionScreen" class="permission-shell h-dvh overflow-y-auto px-5 py-5 text-[#241214] sm:px-8 sm:py-6">
+      <section id="permissionScreen" class="permission-shell h-dvh overflow-y-auto text-[#241214]">
         <div class="permission-layout mx-auto flex min-h-[calc(100dvh-3rem)] max-w-xl flex-col justify-between gap-8">
           <div class="pt-4">
             <div class="flex items-center justify-between gap-4">
@@ -1077,6 +1227,47 @@
               Sunar will ask for access once, then open the camera.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section id="desktopScreen" class="permission-shell hidden h-dvh overflow-y-auto">
+        <div class="desktop-layout mx-auto flex max-w-5xl flex-col justify-between gap-10">
+          <div class="flex items-center justify-between gap-4 pt-2">
+            <div class="brand-wordmark font-condensed text-base font-semibold">SUNAR</div>
+            <div class="app-chip rounded-full border px-3 py-1 text-sm font-medium">AR sky finder</div>
+          </div>
+
+          <div class="grid items-center gap-10 md:grid-cols-[1.2fr_1fr] md:gap-14">
+            <div>
+              <p class="permission-eyebrow font-condensed text-sm font-semibold">made for your phone</p>
+              <h1 class="permission-title font-ultra mt-3 max-w-[13ch] text-6xl font-semibold text-balance lg:text-7xl">
+                Take Sunar outside.
+              </h1>
+              <p class="permission-copy mt-5 max-w-[46ch] text-lg/8 font-medium text-pretty">
+                Sunar turns your phone into an AR compass for the sky: it uses the camera, compass, and GPS to point
+                you at today's sunrise and sunset lines. A desktop doesn't have the sensors for that — open this page
+                on your phone and step outside.
+              </p>
+              <div class="mt-7 flex flex-wrap gap-2.5">
+                <span class="desktop-feature"><i data-lucide="sunrise" class="size-4" aria-hidden="true"></i>Sunrise & sunset bearings</span>
+                <span class="desktop-feature"><i data-lucide="sparkles" class="size-4" aria-hidden="true"></i>Magic hour alerts</span>
+                <span class="desktop-feature"><i data-lucide="waves" class="size-4" aria-hidden="true"></i>Haptic alignment</span>
+              </div>
+            </div>
+
+            <div class="justify-self-center md:justify-self-end">
+              <div class="desktop-qr-card">
+                <div id="desktopQr" class="desktop-qr-frame" role="img" aria-label="QR code linking to this page"></div>
+                <p class="desktop-qr-caption">Scan with your phone's camera</p>
+                <p id="desktopUrl" class="desktop-qr-url font-condensed"></p>
+              </div>
+            </div>
+          </div>
+
+          <p class="permission-copy pb-2 text-center text-sm font-medium">
+            Works in Safari and Chrome — nothing to install.
+            <button id="desktopContinue" type="button">Try it here anyway</button>
+          </p>
         </div>
       </section>
 
@@ -1196,7 +1387,15 @@
       </section>
     </main>
 
+    <div id="rotateOverlay" class="rotate-overlay" role="status">
+      <div class="rotate-card">
+        <i data-lucide="smartphone" class="size-10" aria-hidden="true"></i>
+        <p>Sunar frames the sky in portrait — rotate your phone upright.</p>
+      </div>
+    </div>
+
     <script src="./vendor/lucide.js"></script>
+    <script src="./vendor/qrcode.js"></script>
     <script>
       const state = {
         stream: null,
@@ -1240,6 +1439,13 @@
         /iP(hone|od|ad)/.test(navigator.userAgent) ||
         (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
+      // Fine pointer + hover + zero touch points = a desktop machine with no
+      // compass or usable AR posture; show the hand-off screen instead.
+      const IS_DESKTOP =
+        !IS_IOS &&
+        navigator.maxTouchPoints === 0 &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
       const els = {
         permissionScreen: document.getElementById("permissionScreen"),
         arScreen: document.getElementById("arScreen"),
@@ -1268,6 +1474,10 @@
         bearingCardinals: document.querySelectorAll(".bearing-cardinal"),
         bearingRail: document.querySelector(".bearing-rail"),
         installButton: document.getElementById("installButton"),
+        desktopScreen: document.getElementById("desktopScreen"),
+        desktopQr: document.getElementById("desktopQr"),
+        desktopUrl: document.getElementById("desktopUrl"),
+        desktopContinue: document.getElementById("desktopContinue"),
         locationReadout: document.getElementById("locationReadout"),
         reticle: document.getElementById("reticle"),
         themeColorMeta: document.getElementById("themeColorMeta"),
@@ -2183,6 +2393,28 @@
         return success;
       }
 
+      function showDesktopScreen() {
+        els.permissionScreen.classList.add("hidden");
+        els.desktopScreen.classList.remove("hidden");
+
+        const url = `${location.origin}${location.pathname}`;
+        els.desktopUrl.textContent = `${location.host}${location.pathname === "/" ? "" : location.pathname}`;
+
+        try {
+          const qr = window.qrcode(0, "M");
+          qr.addData(url);
+          qr.make();
+          els.desktopQr.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2 });
+        } catch {
+          els.desktopQr.closest(".desktop-qr-card")?.classList.add("hidden");
+        }
+      }
+
+      function leaveDesktopScreen() {
+        els.desktopScreen.classList.add("hidden");
+        els.permissionScreen.classList.remove("hidden");
+      }
+
       function toggleHaptics() {
         state.haptics = !state.haptics;
         els.hapticButton.innerHTML = `
@@ -2229,14 +2461,20 @@
       els.refreshButton.addEventListener("click", refreshLocation);
       els.hapticButton.addEventListener("click", toggleHaptics);
       els.installButton.addEventListener("click", promptInstall);
+      els.desktopContinue.addEventListener("click", leaveDesktopScreen);
       window.addEventListener("resize", measureLayout);
+      window.visualViewport?.addEventListener("resize", measureLayout);
       window.addEventListener("orientationchange", () => window.setTimeout(measureLayout, 250));
 
       readInitialPermissions();
       applyThemeFromClock();
       setInterval(refreshSunState, 60000);
+      if (IS_DESKTOP) {
+        showDesktopScreen();
+      } else {
+        autoStartIfPossible();
+      }
       if (window.lucide) window.lucide.createIcons();
-      autoStartIfPossible();
 
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
