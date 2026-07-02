@@ -2,7 +2,7 @@
 <html lang="en" class="antialiased">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="description" content="Sunar is a calming AR compass app for finding today's local sunrise and sunset directions." />
     <meta id="themeColorMeta" name="theme-color" content="#2a1518" />
     <meta name="color-scheme" content="dark light" />
@@ -132,6 +132,11 @@
         width: 100%;
         max-width: 100%;
         overflow-x: hidden;
+        /* Kill double-tap smart zoom (Chrome and iOS both honor this even
+           where the viewport meta is ignored) — a stray double-tap on the
+           start button otherwise opens AR pinch-zoomed with the HUD cropped
+           off the layout viewport. Pan gestures inside the app still work. */
+        touch-action: manipulation;
       }
 
       body {
