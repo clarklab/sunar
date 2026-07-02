@@ -1,4 +1,4 @@
-const CACHE_NAME = "sunar-app-v11";
+const CACHE_NAME = "sunar-app-v12";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -15,6 +15,7 @@ const APP_SHELL = [
   "./apple-touch-icon.png",
   "./vendor/tailwind.js",
   "./vendor/lucide.js",
+  "./vendor/qrcode.js",
   "./vendor/fonts/mona-sans.css",
   "./vendor/fonts/mona-latin.woff2",
   "./vendor/fonts/mona-latin-ext.woff2",
